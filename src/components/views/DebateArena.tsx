@@ -1,8 +1,10 @@
+"use client";
+
 import React, { useState, useEffect, useRef } from "react";
-import { Button } from "../ui/Button";
-import { Card } from "../ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
 import { Send, AlertTriangle, ShieldAlert, Clock, User, Bot, BrainCircuit } from "lucide-react";
-import { cn } from "../../lib/utils";
+import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
 
 interface DebateArenaProps {

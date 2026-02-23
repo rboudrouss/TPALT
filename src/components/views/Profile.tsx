@@ -1,12 +1,14 @@
+"use client";
+
 import React, { useState } from "react";
 import { motion } from "motion/react";
-import { Button } from "../ui/Button";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
-import { 
-  ArrowLeft, 
-  Trophy, 
-  TrendingUp, 
-  Target, 
+import { Button } from "@/components/ui/Button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import {
+  ArrowLeft,
+  Trophy,
+  TrendingUp,
+  Target,
   Brain,
   Award,
   Calendar,
@@ -18,9 +20,9 @@ import {
   Medal,
   ChevronRight
 } from "lucide-react";
-import { Badge } from "../../app/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../app/components/ui/tabs";
-import { Progress } from "../../app/components/ui/progress";
+import { Badge } from "@/app/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/app/components/ui/tabs";
+import { Progress } from "@/app/components/ui/progress";
 
 interface ProfileProps {
   onBack: () => void;

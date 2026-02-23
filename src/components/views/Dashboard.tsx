@@ -1,7 +1,9 @@
+"use client";
+
 import React from "react";
 import { motion } from "motion/react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/Card";
-import { Button } from "../ui/Button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 import { Bot, Swords, Trophy, History, User } from "lucide-react";
 
 interface DashboardProps {

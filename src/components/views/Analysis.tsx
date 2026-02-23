@@ -1,7 +1,9 @@
+"use client";
+
 import React from "react";
 import { motion } from "motion/react";
-import { Button } from "../ui/Button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
 import { CheckCircle, AlertTriangle, XCircle, BarChart3, ArrowRight, Home, Share2 } from "lucide-react";
 
 interface AnalysisProps {

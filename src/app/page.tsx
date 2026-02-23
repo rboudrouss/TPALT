@@ -1,17 +1,19 @@
+"use client";
+
 import React, { useState } from "react";
-import { Landing } from "../components/views/Landing";
-import { Dashboard } from "../components/views/Dashboard";
-import { Matchmaking } from "../components/views/Matchmaking";
-import { DebateArena } from "../components/views/DebateArena";
-import { Analysis } from "../components/views/Analysis";
-import { Concept } from "../components/views/Concept";
-import { Profile } from "../components/views/Profile";
+import { Landing } from "@/components/views/Landing";
+import { Dashboard } from "@/components/views/Dashboard";
+import { Matchmaking } from "@/components/views/Matchmaking";
+import { DebateArena } from "@/components/views/DebateArena";
+import { Analysis } from "@/components/views/Analysis";
+import { Concept } from "@/components/views/Concept";
+import { Profile } from "@/components/views/Profile";
 import { AnimatePresence, motion } from "motion/react";
 
 type ViewState = "landing" | "dashboard" | "matchmaking" | "arena" | "analysis" | "concept" | "profile";
 type GameMode = "training" | "casual" | "ranked";
 
-export default function App() {
+export default function Home() {
   const [view, setView] = useState<ViewState>("landing");
   const [mode, setMode] = useState<GameMode>("casual");
   const [lastGameData, setLastGameData] = useState<any>(null);
@@ -146,3 +148,4 @@ export default function App() {
     </div>
   );
 }
+
