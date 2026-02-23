@@ -13,10 +13,23 @@ import { AnimatePresence, motion } from "motion/react";
 type ViewState = "landing" | "dashboard" | "matchmaking" | "arena" | "analysis" | "concept" | "profile";
 type GameMode = "training" | "casual" | "ranked";
 
+interface GameData {
+  topic?: string;
+  messages?: Array<{
+    id: string;
+    sender: string;
+    content: string;
+    timestamp: Date;
+  }>;
+  cheatCount?: number;
+  mode?: string;
+  score?: number;
+}
+
 export default function Home() {
   const [view, setView] = useState<ViewState>("landing");
   const [mode, setMode] = useState<GameMode>("casual");
-  const [lastGameData, setLastGameData] = useState<any>(null);
+  const [lastGameData, setLastGameData] = useState<GameData | null>(null);
 
   // Mock User
   const user = {
@@ -37,7 +50,7 @@ export default function Home() {
     setView("arena");
   };
 
-  const handleFinishDebate = (data: any) => {
+  const handleFinishDebate = (data: GameData) => {
     setLastGameData(data);
     setView("analysis");
   };

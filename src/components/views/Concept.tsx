@@ -76,13 +76,13 @@ export function Concept({ onBack, onGetStarted }: ConceptProps) {
           </h2>
           <div className="prose prose-lg dark:prose-invert max-w-none">
             <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-              <strong className="text-slate-900 dark:text-slate-50">RHETORICA</strong> est bien plus qu'une plateforme de débat. 
-              C'est un terrain d'entraînement intellectuel où chaque affrontement verbal devient une opportunité de progression. 
+              <strong className="text-slate-900 dark:text-slate-50">RHETORICA</strong> est bien plus qu&apos;une plateforme de débat.
+              C&apos;est un terrain d&apos;entraînement intellectuel où chaque affrontement verbal devient une opportunité de progression.
               Grâce à notre IA avancée, chaque argument est décortiqué, analysé et évalué selon des critères rhétoriques précis.
             </p>
             <p className="text-slate-700 dark:text-slate-300 leading-relaxed mt-4">
-              Que vous soyez étudiant préparant un concours d'éloquence, passionné de philosophie ou simplement 
-              curieux d'améliorer vos capacités argumentatives, RHETORICA vous offre un environnement stimulant 
+              Que vous soyez étudiant préparant un concours d&apos;éloquence, passionné de philosophie ou simplement
+              curieux d&apos;améliorer vos capacités argumentatives, RHETORICA vous offre un environnement stimulant
               et bienveillant pour affûter votre pensée critique.
             </p>
           </div>
@@ -180,12 +180,12 @@ export function Concept({ onBack, onGetStarted }: ConceptProps) {
           <div className="flex items-center gap-3 mb-6">
             <Brain className="w-10 h-10 text-indigo-600 dark:text-indigo-400" />
             <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-50">
-              L'Analyse IA
+              L&apos;Analyse IA
             </h2>
           </div>
           <p className="text-slate-700 dark:text-slate-300 mb-6 leading-relaxed">
-            Notre moteur d'analyse ne se contente pas de compter les mots. Il évalue la solidité 
-            logique de vos arguments, détecte les sophismes, identifie les biais cognitifs et 
+            Notre moteur d&apos;analyse ne se contente pas de compter les mots. Il évalue la solidité
+            logique de vos arguments, détecte les sophismes, identifie les biais cognitifs et
             vérifie même la véracité de vos affirmations factuelles.
           </p>
           
@@ -228,8 +228,8 @@ export function Concept({ onBack, onGetStarted }: ConceptProps) {
               </h2>
             </div>
             <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-              Pour garantir l'équité, RHETORICA surveille les changements d'onglet pendant les débats classés. 
-              Toute tentative de recherche externe est détectée et sanctionnée. Le vrai débat se fait avec 
+              Pour garantir l&apos;équité, RHETORICA surveille les changements d&apos;onglet pendant les débats classés.
+              Toute tentative de recherche externe est détectée et sanctionnée. Le vrai débat se fait avec
               vos connaissances, pas avec Google.
             </p>
           </div>
@@ -270,7 +270,7 @@ export function Concept({ onBack, onGetStarted }: ConceptProps) {
         >
           <h2 className="text-3xl font-bold mb-4">Prêt à affûter votre rhétorique ?</h2>
           <p className="text-lg mb-8 opacity-90">
-            Rejoignez une communauté de penseurs critiques et devenez un maître de l'argumentation.
+            Rejoignez une communauté de penseurs critiques et devenez un maître de l&apos;argumentation.
           </p>
           <Button 
             size="lg"
@@ -285,7 +285,14 @@ export function Concept({ onBack, onGetStarted }: ConceptProps) {
   );
 }
 
-function StepCard({ number, icon, title, description }: any) {
+interface StepCardProps {
+  number: string;
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}
+
+function StepCard({ number, icon, title, description }: StepCardProps) {
   return (
     <div className="relative bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
       <div className="absolute -top-4 -left-4 bg-amber-500 text-white font-bold text-xl w-10 h-10 rounded-full flex items-center justify-center shadow-lg">
@@ -298,8 +305,17 @@ function StepCard({ number, icon, title, description }: any) {
   );
 }
 
-function ModeCard({ icon, title, badge, description, features, color }: any) {
-  const colorClasses = {
+interface ModeCardProps {
+  icon: React.ReactNode;
+  title: string;
+  badge: string;
+  description: string;
+  features: string[];
+  color: "emerald" | "amber" | "indigo";
+}
+
+function ModeCard({ icon, title, badge, description, features, color }: ModeCardProps) {
+  const colorClasses: Record<string, string> = {
     emerald: "border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20",
     amber: "border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20",
     indigo: "border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-950/20"
@@ -331,7 +347,13 @@ function ModeCard({ icon, title, badge, description, features, color }: any) {
   );
 }
 
-function AnalysisFeature({ icon, title, description }: any) {
+interface AnalysisFeatureProps {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}
+
+function AnalysisFeature({ icon, title, description }: AnalysisFeatureProps) {
   return (
     <div className="flex items-start gap-3 bg-white/50 dark:bg-slate-900/50 p-4 rounded-lg">
       <div className="mt-0.5">{icon}</div>
@@ -343,7 +365,12 @@ function AnalysisFeature({ icon, title, description }: any) {
   );
 }
 
-function TargetCard({ title, description }: any) {
+interface TargetCardProps {
+  title: string;
+  description: string;
+}
+
+function TargetCard({ title, description }: TargetCardProps) {
   return (
     <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
       <h3 className="font-bold text-lg mb-3 text-slate-900 dark:text-slate-50">{title}</h3>

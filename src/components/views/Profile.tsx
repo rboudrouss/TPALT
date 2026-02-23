@@ -10,14 +10,12 @@ import {
   TrendingUp,
   Target,
   Brain,
-  Award,
   Calendar,
   Clock,
   CheckCircle2,
   XCircle,
   BarChart3,
   Flame,
-  Medal,
   ChevronRight
 } from "lucide-react";
 import { Badge } from "@/app/components/ui/badge";
@@ -26,7 +24,7 @@ import { Progress } from "@/app/components/ui/progress";
 
 interface ProfileProps {
   onBack: () => void;
-  username: string;
+  username?: string;
 }
 
 // Mock data pour la démo
@@ -127,7 +125,7 @@ const mockStats = {
   sophistryRate: 8, // % d'arguments contenant un sophisme
 };
 
-export function Profile({ onBack, username }: ProfileProps) {
+export function Profile({ onBack, username: _username }: ProfileProps) {
   const [activeTab, setActiveTab] = useState("overview");
 
   return (
@@ -197,12 +195,12 @@ export function Profile({ onBack, username }: ProfileProps) {
       <div className="container mx-auto px-4 -mt-8 relative z-20">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-3 mb-8 bg-white dark:bg-slate-900 shadow-lg">
-            <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+            <TabsTrigger value="overview">Vue d&apos;ensemble</TabsTrigger>
             <TabsTrigger value="history">Historique</TabsTrigger>
             <TabsTrigger value="achievements">Succès</TabsTrigger>
           </TabsList>
 
-          {/* Vue d'ensemble */}
+          {/* Vue d&apos;ensemble */}
           <TabsContent value="overview" className="space-y-6">
             {/* Stats principales */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -237,7 +235,7 @@ export function Profile({ onBack, username }: ProfileProps) {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="w-5 h-5" />
-                  Évolution de l'Elo (30 derniers jours)
+                  Évolution de l&apos;Elo (30 derniers jours)
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -248,7 +246,7 @@ export function Profile({ onBack, username }: ProfileProps) {
                 </div>
                 <div className="flex justify-between text-xs text-slate-500 mt-4">
                   <span>Il y a 30 jours</span>
-                  <span>Aujourd'hui</span>
+                  <span>Aujourd&apos;hui</span>
                 </div>
               </CardContent>
             </Card>
@@ -318,7 +316,14 @@ export function Profile({ onBack, username }: ProfileProps) {
   );
 }
 
-function StatCard({ icon, label, value, trend }: any) {
+interface StatCardProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  trend: string;
+}
+
+function StatCard({ icon, label, value, trend }: StatCardProps) {
   return (
     <Card className="shadow-md">
       <CardContent className="p-6">
@@ -335,7 +340,13 @@ function StatCard({ icon, label, value, trend }: any) {
   );
 }
 
-function DetailStat({ label, value, highlight }: any) {
+interface DetailStatProps {
+  label: string;
+  value: string | number;
+  highlight?: "good" | "bad";
+}
+
+function DetailStat({ label, value, highlight }: DetailStatProps) {
   return (
     <div className="flex justify-between items-center">
       <span className="text-sm text-slate-600 dark:text-slate-400">{label}</span>
@@ -350,8 +361,14 @@ function DetailStat({ label, value, highlight }: any) {
   );
 }
 
-function StrengthBar({ label, value, color }: any) {
-  const colorClasses = {
+interface StrengthBarProps {
+  label: string;
+  value: number;
+  color: "blue" | "purple" | "green" | "orange" | "pink";
+}
+
+function StrengthBar({ label, value, color }: StrengthBarProps) {
+  const colorClasses: Record<string, string> = {
     blue: "bg-blue-500",
     purple: "bg-purple-500",
     green: "bg-green-500",
@@ -366,7 +383,7 @@ function StrengthBar({ label, value, color }: any) {
         <span className="font-semibold text-slate-900 dark:text-slate-50">{value}%</span>
       </div>
       <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-        <div 
+        <div
           className={`h-full ${colorClasses[color]} rounded-full transition-all duration-500`}
           style={{ width: `${value}%` }}
         />
@@ -375,7 +392,19 @@ function StrengthBar({ label, value, color }: any) {
   );
 }
 
-function DebateHistoryItem({ debate }: any) {
+interface DebateHistory {
+  id: number;
+  opponent: string;
+  topic: string;
+  position: string;
+  result: "win" | "loss";
+  score: number;
+  eloChange: number;
+  date: string;
+  mode: string;
+}
+
+function DebateHistoryItem({ debate }: { debate: DebateHistory }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -436,15 +465,23 @@ function DebateHistoryItem({ debate }: any) {
   );
 }
 
-function BadgeCard({ badge }: any) {
+interface BadgeData {
+  id: number;
+  name: string;
+  icon: string;
+  unlocked: boolean;
+  date: string | null;
+}
+
+function BadgeCard({ badge }: { badge: BadgeData }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       whileHover={{ scale: badge.unlocked ? 1.05 : 1 }}
       className={`p-6 rounded-xl border ${
-        badge.unlocked 
-          ? "bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-amber-200 dark:border-amber-800" 
+        badge.unlocked
+          ? "bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border-amber-200 dark:border-amber-800"
           : "bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 opacity-50"
       } text-center`}
     >

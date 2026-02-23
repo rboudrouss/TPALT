@@ -1,19 +1,27 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/Button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/Card";
-import { CheckCircle, AlertTriangle, XCircle, BarChart3, ArrowRight, Home, Share2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { CheckCircle, AlertTriangle, BarChart3, ArrowRight, Home, Share2 } from "lucide-react";
+
+interface AnalysisData {
+  score?: number;
+}
 
 interface AnalysisProps {
-  data: any; // In a real app, strict typing
+  data: AnalysisData | null;
   onHome: () => void;
 }
 
+// Generate random score once outside component to avoid impure function in render
+const generateRandomScore = () => Math.floor(Math.random() * 30) + 70;
+
 export function Analysis({ data, onHome }: AnalysisProps) {
-  // Mock data generation based on passed data
-  const score = Math.floor(Math.random() * 30) + 70; // 70-100
+  // Mock data generation based on passed data - use useState to ensure stability
+  const [randomScore] = useState(generateRandomScore);
+  const score = data?.score ?? randomScore;
   const fallacies = [
     { name: "Ad Hominem", count: 1, context: "Attaque personnelle au tour 3" },
     { name: "Pente Glissante", count: 2, context: "Exagération des conséquences au tour 5" },
@@ -51,7 +59,7 @@ export function Analysis({ data, onHome }: AnalysisProps) {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <BarChart3 className="w-5 h-5 text-indigo-500" />
-                        Critères d'évaluation
+                        Critères d&apos;évaluation
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -97,7 +105,7 @@ export function Analysis({ data, onHome }: AnalysisProps) {
                             </li>
                             <li className="text-sm text-emerald-900 dark:text-emerald-200 flex gap-2">
                                 <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                                Bonne réfutation de l'argument adverse sur l'économie.
+                                Bonne réfutation de l&apos;argument adverse sur l&apos;économie.
                             </li>
                         </ul>
                     </CardContent>

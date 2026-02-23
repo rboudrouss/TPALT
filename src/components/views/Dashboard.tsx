@@ -13,7 +13,7 @@ interface DashboardProps {
   onConcept?: () => void;
 }
 
-export function Dashboard({ onSelectMode, username, onProfile, onConcept }: DashboardProps) {
+export function Dashboard({ onSelectMode, username, onProfile, onConcept: _onConcept }: DashboardProps) {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-8">
       <header className="flex justify-between items-center mb-12">
@@ -79,7 +79,15 @@ export function Dashboard({ onSelectMode, username, onProfile, onConcept }: Dash
   );
 }
 
-function GameModeCard({ title, description, icon, onClick, delay }: any) {
+interface GameModeCardProps {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+  delay: number;
+}
+
+function GameModeCard({ title, description, icon, onClick, delay }: GameModeCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}

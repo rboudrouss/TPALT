@@ -37,7 +37,7 @@ export function Landing({ onLogin, onConcept }: LandingProps) {
             RHETORICA
           </h1>
           <p className="text-xl md:text-2xl text-gray-300 max-w-2xl mx-auto font-light leading-relaxed">
-            Maîtrisez l'art du débat. Affrontez des esprits affûtés, recevez une analyse IA de vos arguments et progressez vers l'excellence oratoire.
+            Maîtrisez l&apos;art du débat. Affrontez des esprits affûtés, recevez une analyse IA de vos arguments et progressez vers l&apos;excellence oratoire.
           </p>
         </motion.div>
 
@@ -52,7 +52,7 @@ export function Landing({ onLogin, onConcept }: LandingProps) {
             onClick={onLogin}
             className="bg-amber-600 hover:bg-amber-700 text-white px-8 py-6 text-lg rounded-full font-semibold shadow-lg shadow-amber-900/20 group transition-all"
           >
-            Entrer dans l'arène
+            Entrer dans l&apos;arène
             <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </Button>
           <Button 
@@ -81,8 +81,8 @@ export function Landing({ onLogin, onConcept }: LandingProps) {
                 title="Matchmaking Élo"
                 desc="Affrontez des adversaires de votre niveau et grimpez les échelons."
             />
-            <Feature 
-                icon={<div className="font-serif italic text-amber-400 text-xl">" "</div>}
+            <Feature
+                icon={<div className="font-serif italic text-amber-400 text-xl">&quot; &quot;</div>}
                 title="Sujets Variés"
                 desc="Politique, philosophie, société... Des thèmes pour tous les goûts."
             />

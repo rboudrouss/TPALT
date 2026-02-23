@@ -1,15 +1,21 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { Send, AlertTriangle, ShieldAlert, Clock, User, Bot, BrainCircuit } from "lucide-react";
+import { Send, ShieldAlert, BrainCircuit } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
 
+interface DebateResult {
+  topic: string;
+  messages: Message[];
+  cheatCount: number;
+  mode: string;
+}
+
 interface DebateArenaProps {
   mode: "training" | "casual" | "ranked";
-  onFinish: (result: any) => void;
+  onFinish: (result: DebateResult) => void;
 }
 
 interface Message {
@@ -29,8 +35,12 @@ const TOPICS = [
 const MAX_CHARS = 500;
 const ROUND_TIME = 60; // seconds
 
+// Generate random topic once outside render cycle
+const getRandomTopic = () => TOPICS[Math.floor(Math.random() * TOPICS.length)];
+
 export function DebateArena({ mode, onFinish }: DebateArenaProps) {
-  const [topic] = useState(TOPICS[Math.floor(Math.random() * TOPICS.length)]);
+  // Use useState with initializer to avoid impure function in render
+  const [topic] = useState(getRandomTopic);
   const [messages, setMessages] = useState<Message[]>([
     { id: "0", sender: "system", content: "Le débat commence ! Vous avez la parole.", timestamp: new Date() },
   ]);
@@ -40,6 +50,35 @@ export function DebateArena({ mode, onFinish }: DebateArenaProps) {
   const [cheatCount, setCheatCount] = useState(0);
   const [showCheatWarning, setShowCheatWarning] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const addMessage = useCallback((sender: "user" | "opponent" | "system", content: string) => {
+    setMessages((prev) => [
+      ...prev,
+      { id: Date.now().toString(), sender, content, timestamp: new Date() },
+    ]);
+  }, []);
+
+  const handleTurnSwitch = useCallback(() => {
+    setTimeLeft(ROUND_TIME);
+    setIsMyTurn((prev) => {
+      if (prev) {
+        // AI Turn Simulation
+        setTimeout(() => {
+            const aiResponses = [
+                "C&apos;est un point intéressant, mais avez-vous considéré l&apos;aspect économique ?",
+                "Je pense que votre argument repose sur une généralisation hâtive.",
+                "En effet, mais les données historiques suggèrent le contraire.",
+                "C&apos;est un sophisme de la pente glissante. Restons sur les faits.",
+            ];
+            const response = aiResponses[Math.floor(Math.random() * aiResponses.length)];
+            addMessage("opponent", response);
+            setIsMyTurn(true);
+            setTimeLeft(ROUND_TIME);
+        }, 3000);
+      }
+      return !prev;
+    });
+  }, [addMessage]);
 
   // Anti-Cheat: Visibility Change
   useEffect(() => {
@@ -60,10 +99,11 @@ export function DebateArena({ mode, onFinish }: DebateArenaProps) {
       const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
       return () => clearTimeout(timer);
     } else {
-      // Time's up for turn logic could go here
-      handleTurnSwitch();
+      // Time's up for turn logic - schedule via setTimeout to avoid sync setState in effect
+      const turnTimer = setTimeout(handleTurnSwitch, 0);
+      return () => clearTimeout(turnTimer);
     }
-  }, [timeLeft]);
+  }, [timeLeft, handleTurnSwitch]);
 
   // Scroll to bottom
   useEffect(() => {
@@ -71,33 +111,6 @@ export function DebateArena({ mode, onFinish }: DebateArenaProps) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
-
-  const handleTurnSwitch = () => {
-    setTimeLeft(ROUND_TIME);
-    setIsMyTurn(!isMyTurn);
-    if (isMyTurn) {
-        // AI Turn Simulation
-        setTimeout(() => {
-            const aiResponses = [
-                "C'est un point intéressant, mais avez-vous considéré l'aspect économique ?",
-                "Je pense que votre argument repose sur une généralisation hâtive.",
-                "En effet, mais les données historiques suggèrent le contraire.",
-                "C'est un sophisme de la pente glissante. Restons sur les faits.",
-            ];
-            const response = aiResponses[Math.floor(Math.random() * aiResponses.length)];
-            addMessage("opponent", response);
-            setIsMyTurn(true);
-            setTimeLeft(ROUND_TIME);
-        }, 3000);
-    }
-  };
-
-  const addMessage = (sender: "user" | "opponent" | "system", content: string) => {
-    setMessages((prev) => [
-      ...prev,
-      { id: Date.now().toString(), sender, content, timestamp: new Date() },
-    ]);
-  };
 
   const handleSend = () => {
     if (!inputText.trim() || !isMyTurn) return;
@@ -238,10 +251,10 @@ export function DebateArena({ mode, onFinish }: DebateArenaProps) {
                     <h3 className="font-semibold">Assistant IA</h3>
                 </div>
                 <div className="bg-white/50 dark:bg-slate-800/50 p-3 rounded-lg text-sm text-slate-600 dark:text-slate-300 mb-4 border border-indigo-100 dark:border-indigo-900/30">
-                    <p className="mb-2">💡 <strong>Conseil :</strong> Essayez d'utiliser la méthode S.E.X.I (Statement, Explanation, eXample, Impact) pour structurer votre prochain argument.</p>
+                    <p className="mb-2">💡 <strong>Conseil :</strong> Essayez d&apos;utiliser la méthode S.E.X.I (Statement, Explanation, eXample, Impact) pour structurer votre prochain argument.</p>
                 </div>
                  <div className="bg-white/50 dark:bg-slate-800/50 p-3 rounded-lg text-sm text-slate-600 dark:text-slate-300 border border-indigo-100 dark:border-indigo-900/30">
-                    <p>🔍 <strong>Fact check :</strong> L'adversaire a mentionné une date incorrecte. La Révolution française a commencé en 1789, pas 1798.</p>
+                    <p>🔍 <strong>Fact check :</strong> L&apos;adversaire a mentionné une date incorrecte. La Révolution française a commencé en 1789, pas 1798.</p>
                 </div>
             </div>
         ) : (
