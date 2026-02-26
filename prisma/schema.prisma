@@ -1,0 +1,85 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/app/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  username      String    @unique
+  email         String?   @unique
+  passwordHash  String?
+  elo           Int       @default(1200)
+  level         Int       @default(1)
+  xp            Int       @default(0)
+  wins          Int       @default(0)
+  losses        Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  debatesAsPlayer1 Debate[] @relation("Player1")
+  debatesAsPlayer2 Debate[] @relation("Player2")
+  messages         Message[]
+}
+
+model Debate {
+  id            String    @id @default(cuid())
+  topic         String
+  mode          String    // training, casual, ranked
+  status        String    @default("waiting") // waiting, active, finished
+
+  player1Id     String
+  player1       User      @relation("Player1", fields: [player1Id], references: [id])
+  player1Position String?
+
+  player2Id     String?
+  player2       User?     @relation("Player2", fields: [player2Id], references: [id])
+  player2Position String?
+
+  winnerId      String?
+
+  startedAt     DateTime?
+  finishedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  messages      Message[]
+  analysis      Analysis?
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id])
+  debateId  String
+  debate    Debate   @relation(fields: [debateId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Analysis {
+  id              String   @id @default(cuid())
+  debateId        String   @unique
+  debate          Debate   @relation(fields: [debateId], references: [id])
+
+  overallScore    Int
+  argumentQuality Int
+  rhetoricStyle   Int
+  logicalCoherence Int
+  factChecking    Int
+
+  sophisms        String   // JSON array of detected sophisms
+  biases          String   // JSON array of detected cognitive biases
+  strengths       String   // JSON array of strong points
+  weaknesses      String   // JSON array of areas to improve
+
+  player1Score    Int?
+  player2Score    Int?
+
+  createdAt       DateTime @default(now())
+}
