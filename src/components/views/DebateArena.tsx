@@ -34,6 +34,8 @@ export function DebateArena() {
   const [cheatCount, setCheatCount] = useState(0);
   const [showCheatWarning, setShowCheatWarning] = useState(false);
   const [aiHint, setAiHint] = useState("");
+  const [liveEvaluation, setLiveEvaluation] = useState<any>(null);
+  const [isEvaluating, setIsEvaluating] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Anti-Cheat: Visibility Change
@@ -123,11 +125,59 @@ export function DebateArena() {
     ]);
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!inputText.trim() || !isMyTurn) return;
-    addMessage("user", inputText);
+
+    const userMsg = inputText;
+    addMessage("user", userMsg);
     setInputText("");
+
+    // Switch turn immediately to not block UI
     handleTurnSwitch();
+
+    // Evaluate the move live
+    setIsEvaluating(true);
+    setLiveEvaluation(null);
+    try {
+      const debateContext = {
+        debate_meta: {
+          topic: topic,
+          stance_A: position === "POUR" ? "POUR" : "CONTRE",
+          stance_B: position === "POUR" ? "CONTRE" : "POUR",
+          round_limit: 6,
+          scoring_mode: "live"
+        },
+        current_state: {
+          round_number: turnCount + 1,
+          scores: { A: 50, B: 50 }, // Starting point
+          momentum: "neutral"
+        },
+        conversation_history: messages.filter(m => m.sender !== "system").map(m => ({
+          round: Math.ceil(messages.filter(msg => msg.sender !== "system").indexOf(m) / 2) + 1,
+          player: m.sender === "user" ? "A" : "B",
+          message: m.content
+        })),
+        message_to_evaluate: {
+          player: "A",
+          message: userMsg
+        }
+      };
+
+      const res = await fetch("/api/ai/evaluate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ debateContext })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setLiveEvaluation(data);
+      }
+    } catch (e) {
+      console.error("Live evaluation failed:", e);
+    } finally {
+      setIsEvaluating(false);
+    }
   };
 
   const handleEndDebate = async () => {
@@ -314,16 +364,83 @@ export function DebateArena() {
       </main>
 
       {/* Right Sidebar: AI Assistant */}
-      <aside className="w-1/5 bg-slate-100 dark:bg-slate-900/50 border-l border-slate-200 dark:border-slate-800 p-4">
+      <aside className="w-1/5 bg-slate-100 dark:bg-slate-900/50 border-l border-slate-200 dark:border-slate-800 p-4 overflow-y-auto">
         {gameMode === "casual" || gameMode === "training" ? (
-          <div className="h-full flex flex-col">
-            <div className="flex items-center gap-2 mb-4 text-indigo-600 dark:text-indigo-400">
-              <BrainCircuit className="w-5 h-5" />
-              <h3 className="font-semibold">Assistant IA</h3>
+          <div className="h-full flex flex-col gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-4 text-indigo-600 dark:text-indigo-400">
+                <BrainCircuit className="w-5 h-5" />
+                <h3 className="font-semibold">Assistant IA</h3>
+              </div>
+              <div className="bg-white/50 dark:bg-slate-800/50 p-3 rounded-lg text-sm text-slate-600 dark:text-slate-300 border border-indigo-100 dark:border-indigo-900/30">
+                <p>💡 <strong>Conseil :</strong> {aiHint || "Chargement..."}</p>
+              </div>
             </div>
-            <div className="bg-white/50 dark:bg-slate-800/50 p-3 rounded-lg text-sm text-slate-600 dark:text-slate-300 border border-indigo-100 dark:border-indigo-900/30">
-              <p>💡 <strong>Conseil :</strong> {aiHint || "Chargement..."}</p>
+
+            {/* Live Evaluation Output */}
+            <div>
+              <div className="flex items-center gap-2 mb-2 text-indigo-600 dark:text-indigo-400">
+                <ShieldAlert className="w-5 h-5" />
+                <h3 className="font-semibold">Analyse du dernier coup</h3>
+              </div>
+
+              <div className="bg-white/50 dark:bg-slate-800/50 p-3 rounded-lg text-sm border border-slate-200 dark:border-slate-700 min-h-[150px]">
+                {isEvaluating ? (
+                  <div className="animate-pulse text-slate-400 flex items-center justify-center h-full text-xs italic">
+                    Analyse de l'argument...
+                  </div>
+                ) : liveEvaluation ? (
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center bg-slate-100 dark:bg-slate-900 p-2 rounded">
+                      <span className="text-xs uppercase font-medium text-slate-500">Qualité</span>
+                      <span className={cn(
+                        "font-bold capitalize",
+                        liveEvaluation.evaluation_summary.move_quality === 'brilliant' ? 'text-purple-600' :
+                        liveEvaluation.evaluation_summary.move_quality === 'excellent' ? 'text-green-600' :
+                        liveEvaluation.evaluation_summary.move_quality === 'blunder' ? 'text-red-600' : 'text-blue-600'
+                      )}>
+                        {liveEvaluation.evaluation_summary.move_quality}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center bg-slate-100 dark:bg-slate-900 p-2 rounded">
+                       <span className="text-xs uppercase font-medium text-slate-500">Score Delta</span>
+                       <span className={cn(
+                         "font-bold",
+                         liveEvaluation.score_update.delta > 0 ? "text-green-600" : "text-red-500"
+                       )}>
+                         {liveEvaluation.score_update.delta > 0 ? "+" : ""}{liveEvaluation.score_update.delta}
+                       </span>
+                    </div>
+
+                    {liveEvaluation.events && liveEvaluation.events.length > 0 && (
+                      <div className="mt-2">
+                         <span className="text-xs font-semibold text-slate-500 mb-1 block">Événements Détectés :</span>
+                         <ul className="space-y-1">
+                           {liveEvaluation.events.map((ev: any, idx: number) => (
+                              <li key={idx} className="text-xs p-1.5 bg-slate-50 dark:bg-slate-800 rounded border border-slate-100 dark:border-slate-700 flex justify-between items-start">
+                                <div>
+                                  <span className="font-bold text-indigo-500 block mb-0.5">{ev.type}</span>
+                                  <span className="text-slate-600 dark:text-slate-300">{ev.description}</span>
+                                </div>
+                                <span className={cn(
+                                   "ml-2 px-1.5 py-0.5 rounded-full text-[10px] whitespace-nowrap",
+                                   ev.severity === 'high' ? 'bg-red-100 text-red-600' : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                                )}>{ev.impact_score} pts</span>
+                              </li>
+                           ))}
+                         </ul>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-slate-400 flex items-center justify-center h-full text-xs italic">
+                    Envoyez un argument pour voir l'analyse.
+                  </div>
+                )}
+              </div>
             </div>
+
           </div>
         ) : (
           <div className="h-full flex flex-col items-center justify-center opacity-50">
