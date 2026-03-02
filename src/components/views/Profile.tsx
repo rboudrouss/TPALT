@@ -142,15 +142,17 @@ export function Profile() {
 
   const displayUser = profile ?? user;
   const debates = profile?.debates ?? [];
+  // Training games are excluded from all stat computations
+  const rankedDebates = debates.filter((d) => d.mode !== "training");
   const winRate =
     displayUser.wins + displayUser.losses > 0
       ? Math.round((displayUser.wins / (displayUser.wins + displayUser.losses)) * 100)
       : 0;
   const xpProgress = (displayUser.xp % 1000) / 10;
-  const currentStreak = computeCurrentStreak(debates, user.id);
-  const maxStreak = computeMaxStreak(debates, user.id);
-  const avgScore = computeAverageScore(debates, user.id);
-  const badges = computeBadges(debates, displayUser.wins, user.id);
+  const currentStreak = computeCurrentStreak(rankedDebates, user.id);
+  const maxStreak = computeMaxStreak(rankedDebates, user.id);
+  const avgScore = computeAverageScore(rankedDebates, user.id);
+  const badges = computeBadges(rankedDebates, displayUser.wins, user.id);
   const memberSince = profile?.createdAt
     ? new Date(profile.createdAt).toLocaleDateString("fr-FR", { month: "long", year: "numeric" })
     : "";
@@ -231,7 +233,7 @@ export function Profile() {
 
         {activeTab === "overview" && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <StatCard icon={<BarChart3 className="w-6 h-6 text-blue-500" />} label="Débats" value={debates.length} trend={`${winRate}% de victoires`} />
+            <StatCard icon={<BarChart3 className="w-6 h-6 text-blue-500" />} label="Débats" value={rankedDebates.length} trend={`${winRate}% de victoires`} />
             <StatCard icon={<Target className="w-6 h-6 text-green-500" />} label="Victoires" value={displayUser.wins} trend={`${displayUser.losses} défaites`} />
             <StatCard icon={<Brain className="w-6 h-6 text-purple-500" />} label="Score moyen" value={avgScore} trend={avgScore !== "N/A" ? "Basé sur vos analyses" : "Pas encore d'analyse"} />
             <StatCard icon={<Flame className="w-6 h-6 text-orange-500" />} label="Série actuelle" value={currentStreak} trend={`Record: ${maxStreak}`} />

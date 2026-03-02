@@ -6,6 +6,7 @@ import { Send, ShieldAlert, Clock, BrainCircuit } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
 import { useApp } from "@/lib/store";
+import { getRandomTopic } from "@/lib/topics";
 
 interface Message {
   id: string;
@@ -14,13 +15,6 @@ interface Message {
   timestamp: Date;
 }
 
-const TOPICS = [
-  "L'intelligence artificielle est-elle une menace pour la créativité humaine ?",
-  "Faut-il abolir la propriété privée ?",
-  "La colonisation de Mars est-elle une priorité ?",
-  "Le vote devrait-il être obligatoire ?",
-];
-
 const MAX_CHARS = 500;
 const ROUND_TIME = 90;
 
@@ -28,7 +22,7 @@ export function DebateArena() {
   const { state, dispatch } = useApp();
   const { gameMode } = state;
 
-  const [topic] = useState(TOPICS[Math.floor(Math.random() * TOPICS.length)]);
+  const [topic] = useState(getRandomTopic);
   const [position] = useState(Math.random() > 0.5 ? "POUR" : "CONTRE");
   const [messages, setMessages] = useState<Message[]>([
     { id: "0", sender: "system", content: "Le débat commence ! Vous avez la parole.", timestamp: new Date() },

@@ -39,9 +39,6 @@ export function Dashboard() {
           Bonjour, {user.username}
         </h1>
         <div className="flex gap-2">
-          <Button variant="ghost" size="icon" title="Historique">
-            <History className="h-5 w-5" />
-          </Button>
           <Button
             variant="ghost"
             size="icon"

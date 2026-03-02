@@ -1,18 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-
-const TOPICS = [
-  "L'intelligence artificielle est-elle une menace pour la créativité humaine ?",
-  "Faut-il abolir la propriété privée ?",
-  "La colonisation de Mars est-elle une priorité ?",
-  "Le vote devrait-il être obligatoire ?",
-  "Les réseaux sociaux nuisent-ils à la démocratie ?",
-  "L'art contemporain a-t-il perdu son sens ?",
-  "La peine de mort est-elle justifiable ?",
-  "Le revenu universel est-il une solution viable ?",
-  "L'éducation devrait-elle être entièrement gratuite ?",
-  "Les voitures autonomes devraient-elles être légalisées ?",
-];
+import { getRandomTopic } from "@/lib/topics";
 
 // Create a new debate
 export async function POST(request: NextRequest) {
@@ -26,7 +14,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const topic = TOPICS[Math.floor(Math.random() * TOPICS.length)];
+    const topic = getRandomTopic();
     const positions = ["POUR", "CONTRE"];
     const player1Position = positions[Math.floor(Math.random() * 2)];
 

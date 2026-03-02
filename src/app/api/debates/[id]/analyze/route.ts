@@ -65,31 +65,33 @@ export async function POST(
       },
     });
 
-    // Update user stats
-    if (debate.player1) {
-      const isWinner = analysisResult.player1Score > analysisResult.player2Score;
-      await db.user.update({
-        where: { id: debate.player1Id },
-        data: {
-          wins: { increment: isWinner ? 1 : 0 },
-          losses: { increment: isWinner ? 0 : 1 },
-          elo: { increment: isWinner ? 15 : -10 },
-          xp: { increment: analysisResult.player1Score },
-        },
-      });
-    }
+    // Update user stats — training mode does not affect wins/losses/elo/xp
+    if (debate.mode !== "training") {
+      if (debate.player1) {
+        const isWinner = analysisResult.player1Score > analysisResult.player2Score;
+        await db.user.update({
+          where: { id: debate.player1Id },
+          data: {
+            wins: { increment: isWinner ? 1 : 0 },
+            losses: { increment: isWinner ? 0 : 1 },
+            elo: { increment: isWinner ? 15 : -10 },
+            xp: { increment: analysisResult.player1Score },
+          },
+        });
+      }
 
-    if (debate.player2) {
-      const isWinner = analysisResult.player2Score > analysisResult.player1Score;
-      await db.user.update({
-        where: { id: debate.player2Id! },
-        data: {
-          wins: { increment: isWinner ? 1 : 0 },
-          losses: { increment: isWinner ? 0 : 1 },
-          elo: { increment: isWinner ? 15 : -10 },
-          xp: { increment: analysisResult.player2Score },
-        },
-      });
+      if (debate.player2) {
+        const isWinner = analysisResult.player2Score > analysisResult.player1Score;
+        await db.user.update({
+          where: { id: debate.player2Id! },
+          data: {
+            wins: { increment: isWinner ? 1 : 0 },
+            losses: { increment: isWinner ? 0 : 1 },
+            elo: { increment: isWinner ? 15 : -10 },
+            xp: { increment: analysisResult.player2Score },
+          },
+        });
+      }
     }
 
     return NextResponse.json({
