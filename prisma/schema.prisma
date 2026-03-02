@@ -26,6 +26,17 @@ model User {
   debatesAsPlayer1 Debate[] @relation("Player1")
   debatesAsPlayer2 Debate[] @relation("Player2")
   messages         Message[]
+  achievements     UserAchievement[]
+}
+
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  achievementId Int
+  unlockedAt    DateTime @default(now())
+
+  @@unique([userId, achievementId])
 }
 
 model Debate {

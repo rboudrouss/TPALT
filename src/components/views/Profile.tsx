@@ -19,6 +19,7 @@ import {
   Clock,
 } from "lucide-react";
 import { useApp } from "@/lib/store";
+import type { AchievementResult } from "@/lib/achievements";
 
 interface DebateRecord {
   id: string;
@@ -102,32 +103,16 @@ function computeAverageScore(debates: DebateRecord[], userId: string): string {
   return ((scores.reduce((a, b) => a + b, 0) / scores.length) / 10).toFixed(1) + "/10";
 }
 
-function computeBadges(debates: DebateRecord[], wins: number, userId: string) {
-  const sorted = [...debates].sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-  );
-  const firstDebate = sorted[0];
-  const maxStreak = computeMaxStreak(debates, userId);
-  const sophismFree = debates.some((d) => {
-    if (!d.analysis?.sophisms) return false;
-    try { return (JSON.parse(d.analysis.sophisms) as unknown[]).length === 0; }
-    catch { return false; }
-  });
-  return [
-    { id: 1, name: "Premier Débat", icon: "🎤", unlocked: debates.length > 0, date: firstDebate ? formatRelativeDate(firstDebate.createdAt) : null },
-    { id: 2, name: "10 Victoires",  icon: "🏆", unlocked: wins >= 10, date: wins >= 10 ? "Débloqué" : null },
-    { id: 3, name: "Série de 5",    icon: "🔥", unlocked: maxStreak >= 5, date: maxStreak >= 5 ? "Débloqué" : null },
-    { id: 4, name: "Sans Sophisme", icon: "✨", unlocked: sophismFree, date: sophismFree ? "Débloqué" : null },
-    { id: 5, name: "Top 100",       icon: "👑", unlocked: false, date: null },
-  ];
-}
-
 export function Profile() {
   const { state, dispatch } = useApp();
   const { user } = state;
   const [activeTab, setActiveTab] = useState<"overview" | "history" | "achievements">("overview");
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [achievementCategories, setAchievementCategories] = useState<
+    { category: string; items: AchievementResult[] }[]
+  >([]);
+  const [achievementsLoading, setAchievementsLoading] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -137,6 +122,19 @@ export function Profile() {
       .then((data: UserProfile) => { setProfile(data); setLoading(false); })
       .catch(() => setLoading(false));
   }, [user]);
+
+  // After profile loads, evaluate + persist achievements
+  useEffect(() => {
+    if (!user || loading) return;
+    setAchievementsLoading(true);
+    fetch(`/api/users/${user.id}/achievements`, { method: "POST" })
+      .then((res) => res.json())
+      .then((data: { categories: { category: string; items: AchievementResult[] }[] }) => {
+        setAchievementCategories(data.categories ?? []);
+        setAchievementsLoading(false);
+      })
+      .catch(() => setAchievementsLoading(false));
+  }, [user, loading]);
 
   if (!user) return null;
 
@@ -152,7 +150,8 @@ export function Profile() {
   const currentStreak = computeCurrentStreak(rankedDebates, user.id);
   const maxStreak = computeMaxStreak(rankedDebates, user.id);
   const avgScore = computeAverageScore(rankedDebates, user.id);
-  const badges = computeBadges(rankedDebates, displayUser.wins, user.id);
+  const totalAchievements = achievementCategories.reduce((n, c) => n + c.items.length, 0);
+  const unlockedCount = achievementCategories.reduce((n, c) => n + c.items.filter((b) => b.unlocked).length, 0);
   const memberSince = profile?.createdAt
     ? new Date(profile.createdAt).toLocaleDateString("fr-FR", { month: "long", year: "numeric" })
     : "";
@@ -299,22 +298,66 @@ export function Profile() {
         )}
 
         {activeTab === "achievements" && (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            {badges.map((b) => (
-              <motion.div
-                key={b.id}
-                whileHover={{ scale: b.unlocked ? 1.05 : 1 }}
-                className={`p-6 rounded-xl border text-center ${
-                  b.unlocked
-                    ? "bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 border-amber-200"
-                    : "bg-slate-100 dark:bg-slate-900 border-slate-200 opacity-50"
-                }`}
-              >
-                <div className={`text-4xl mb-2 ${b.unlocked ? "" : "grayscale"}`}>{b.icon}</div>
-                <h3 className="font-semibold text-sm">{b.name}</h3>
-                <p className="text-xs text-slate-500">{b.unlocked ? b.date : "Verrouillé"}</p>
-              </motion.div>
-            ))}
+          <div className="space-y-8">
+            {/* Summary */}
+            <div className="flex items-center justify-between bg-white dark:bg-slate-900 rounded-xl px-6 py-4 shadow-md border border-slate-200 dark:border-slate-800">
+              <div>
+                <p className="text-sm text-slate-500">Succès débloqués</p>
+                <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                  {unlockedCount} <span className="text-slate-400 font-normal text-lg">/ {totalAchievements}</span>
+                </p>
+              </div>
+              <div className="w-48">
+                <Progress value={totalAchievements > 0 ? Math.round((unlockedCount / totalAchievements) * 100) : 0} className="h-3" />
+                <p className="text-xs text-slate-500 mt-1 text-right">
+                  {totalAchievements > 0 ? Math.round((unlockedCount / totalAchievements) * 100) : 0}%
+                </p>
+              </div>
+            </div>
+
+            {achievementsLoading ? (
+              <p className="text-center text-slate-500 py-8">Chargement des succès...</p>
+            ) : (
+              achievementCategories.map(({ category, items }) => (
+                <div key={category}>
+                  <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">{category}</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                    {items.map((b) => (
+                      <motion.div
+                        key={b.id}
+                        whileHover={{ scale: 1.02 }}
+                        className={`relative p-4 rounded-xl border flex flex-col gap-2 ${
+                          b.unlocked
+                            ? "bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20 border-amber-300 dark:border-amber-700"
+                            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 opacity-60"
+                        }`}
+                      >
+                        {b.unlocked && (
+                          <span className="absolute top-2 right-2">
+                            <CheckCircle2 className="w-4 h-4 text-amber-500" />
+                          </span>
+                        )}
+                        <span className={`text-3xl ${b.unlocked ? "" : "grayscale opacity-60"}`}>{b.icon}</span>
+                        <div>
+                          <p className="font-semibold text-sm text-slate-900 dark:text-white leading-tight">{b.name}</p>
+                          <p className="text-xs text-slate-500 mt-0.5 leading-snug">{b.description}</p>
+                        </div>
+                        {b.unlocked ? (
+                          <p className="text-xs text-amber-600 dark:text-amber-400 font-medium mt-auto">
+                            {b.unlockedAt ? formatRelativeDate(b.unlockedAt) : "Débloqué"}
+                          </p>
+                        ) : (
+                          <div className="mt-auto">
+                            <Progress value={b.progress} className="h-1.5" />
+                            <p className="text-xs text-slate-400 mt-1">{b.progressLabel}</p>
+                          </div>
+                        )}
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         )}
       </div>

@@ -2,7 +2,9 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-pnpx prisma generate
+```bash
+pnpx prisma db push && pnpx prisma generate
+```
 
 First, run the development server:
 
