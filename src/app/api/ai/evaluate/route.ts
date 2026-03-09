@@ -8,9 +8,9 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { debateContext, apiUrl, modelName, apiKey } = body;
 
-    const url = apiUrl || process.env.VITE_LLM_API_URL || process.env.NEXT_PUBLIC_LLM_API_URL || "https://api.groq.com/openai/v1/chat/completions";
-    const model = modelName || process.env.VITE_LLM_MODEL || process.env.NEXT_PUBLIC_LLM_MODEL || "llama-3.3-70b-versatile";
-    const key = apiKey || process.env.VITE_OPENAI_API_KEY || process.env.NEXT_PUBLIC_OPENAI_API_KEY || "your_api_key_here";
+    const url = apiUrl || process.env.LLM_API_URL || "https://api.groq.com/openai/v1/chat/completions";
+    const model = modelName || process.env.LLM_MODEL || "llama-3.3-70b-versatile";
+    const key = apiKey || process.env.LLM_API_KEY || "your_api_key_here";
     console.log("Evaluating with LLM:", { url, model });
     const response = await fetch(url, {
       method: "POST",
