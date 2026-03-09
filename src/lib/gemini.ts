@@ -37,6 +37,16 @@ Sujet du débat: "${topic}"
 Messages du débat:
 ${messages.map((m) => `${m.sender}: ${m.content}`).join("\n")}
 
+Pour le champ "sophisms", inclus TOUS les sophismes logiques détectés, y compris :
+- Ad hominem (attaque personnelle plutôt que de l'argument)
+- Homme de paille (déformation de l'argument adverse)
+- Pente glissante
+- Fausse dichotomie
+- Appel à l'autorité non pertinent
+- Généralisation hâtive
+- Et tout autre sophisme ou paralogisme identifiable.
+Chaque entrée doit avoir un "name" normalisé (ex: "Ad Hominem", "Homme de Paille"), un "count" et un "context".
+
 Réponds en JSON valide avec cette structure exacte:
 {
   "overallScore": <score global de 0 à 100>,
@@ -44,8 +54,8 @@ Réponds en JSON valide avec cette structure exacte:
   "rhetoricStyle": <style rhétorique de 0 à 100>,
   "logicalCoherence": <cohérence logique de 0 à 100>,
   "factChecking": <exactitude factuelle de 0 à 100>,
-  "sophisms": [{"name": "<nom du sophisme>", "count": <nombre>, "context": "<contexte>"}],
-  "biases": [{"name": "<nom du biais>", "context": "<contexte>"}],
+  "sophisms": [{"name": "<nom normalisé du sophisme>", "count": <nombre d'occurrences>, "context": "<brève citation ou contexte>"}],
+  "biases": [{"name": "<nom du biais cognitif>", "context": "<contexte>"}],
   "strengths": ["<point fort 1>", "<point fort 2>"],
   "weaknesses": ["<point faible 1>", "<point faible 2>"],
   "player1Score": <score joueur 1 de 0 à 100>,

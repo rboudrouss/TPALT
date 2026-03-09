@@ -18,6 +18,20 @@ interface Message {
 const MAX_CHARS = 500;
 const ROUND_TIME = 90;
 
+/** Maps live-evaluation event types (stored as sophisms/fallacies in the DB) to readable French labels */
+const EVENT_TYPE_LABELS: Record<string, string> = {
+  claim: "Affirmation",
+  evidence: "Preuve",
+  nuance: "Nuance",
+  counter_argument: "Contre-argument",
+  /** logical fallacy (straw man, slippery slope, false dilemma…) — stored as sophism in DB */
+  sophism: "Sophisme",
+  /** personal attack fallacy — a specific sophism targeting the person, stored as ad_hominem */
+  ad_hominem: "Ad Hominem",
+  irrelevance: "Hors-sujet",
+  repetition: "Répétition",
+};
+
 export function DebateArena() {
   const { state, dispatch } = useApp();
   const { gameMode } = state;
@@ -420,7 +434,14 @@ export function DebateArena() {
                            {liveEvaluation.events.map((ev: any, idx: number) => (
                               <li key={idx} className="text-xs p-1.5 bg-slate-50 dark:bg-slate-800 rounded border border-slate-100 dark:border-slate-700 flex justify-between items-start">
                                 <div>
-                                  <span className="font-bold text-indigo-500 block mb-0.5">{ev.type}</span>
+                                  <span className={cn(
+                                    "font-bold block mb-0.5",
+                                    ev.type === "sophism" || ev.type === "ad_hominem"
+                                      ? "text-red-500"
+                                      : "text-indigo-500"
+                                  )}>
+                                    {EVENT_TYPE_LABELS[ev.type] ?? ev.type}
+                                  </span>
                                   <span className="text-slate-600 dark:text-slate-300">{ev.description}</span>
                                 </div>
                                 <span className={cn(
