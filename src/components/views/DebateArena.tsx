@@ -7,6 +7,13 @@ import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
 import { useApp } from "@/lib/store";
 import { getRandomTopic } from "@/lib/topics";
+import { MAX_PLAYER_CHARS } from "@/lib/prompts";
+
+const DIFFICULTY_LABELS: Record<string, { label: string; color: string }> = {
+  easy: { label: "Débutant", color: "text-emerald-400" },
+  medium: { label: "Intermédiaire", color: "text-amber-400" },
+  hard: { label: "Expert", color: "text-red-400" },
+};
 
 interface Message {
   id: string;
@@ -24,17 +31,16 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   evidence: "Preuve",
   nuance: "Nuance",
   counter_argument: "Contre-argument",
-  /** logical fallacy (straw man, slippery slope, false dilemma…) — stored as sophism in DB */
   sophism: "Sophisme",
-  /** personal attack fallacy — a specific sophism targeting the person, stored as ad_hominem */
   ad_hominem: "Ad Hominem",
   irrelevance: "Hors-sujet",
   repetition: "Répétition",
+  wrong_side: "Mauvais camp ⚠️",
 };
 
 export function DebateArena() {
   const { state, dispatch } = useApp();
-  const { gameMode } = state;
+  const { gameMode, trainingDifficulty } = state;
 
   const [topic] = useState(getRandomTopic);
   const [position] = useState(Math.random() > 0.5 ? "POUR" : "CONTRE");
@@ -50,7 +56,11 @@ export function DebateArena() {
   const [aiHint, setAiHint] = useState("");
   const [liveEvaluation, setLiveEvaluation] = useState<any>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isOpponentTyping, setIsOpponentTyping] = useState(false);
+  const [scores, setScores] = useState({ A: 50, B: 50 });
+  const scrollRef = useRef<HTMLDivElement>(null);  
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
 
   // Anti-Cheat: Visibility Change
   useEffect(() => {
@@ -116,19 +126,54 @@ export function DebateArena() {
     setTurnCount((prev) => prev + 1);
 
     if (isMyTurn) {
-      // AI response simulation
-      setTimeout(() => {
-        const aiResponses = [
-          "C'est un point intéressant, mais avez-vous considéré l'aspect économique ?",
-          "Je pense que votre argument repose sur une généralisation hâtive.",
-          "En effet, mais les données historiques suggèrent le contraire.",
-          "C'est un sophisme de la pente glissante. Restons sur les faits.",
-          "Votre argument manque de sources concrètes pour être convaincant.",
-        ];
-        addMessage("opponent", aiResponses[Math.floor(Math.random() * aiResponses.length)]);
-        setIsMyTurn(true);
-        setTimeLeft(ROUND_TIME);
-      }, 3000);
+      // AI opponent response via API (training) or fallback simulation
+      if (gameMode === "training" && trainingDifficulty) {
+        fetchOpponentResponse();
+      } else {
+        // Non-training modes: simple placeholder opponent
+        setTimeout(() => {
+          const fallbackResponses = [
+            "C'est un point intéressant, mais avez-vous considéré l'aspect économique ?",
+            "Je pense que votre argument repose sur une généralisation hâtive.",
+            "En effet, mais les données historiques suggèrent le contraire.",
+            "C'est un sophisme de la pente glissante. Restons sur les faits.",
+            "Votre argument manque de sources concrètes pour être convaincant.",
+          ];
+          addMessage("opponent", fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)]);
+          setIsMyTurn(true);
+          setTimeLeft(ROUND_TIME);
+        }, 2000);
+      }
+    }
+  };
+
+  const fetchOpponentResponse = async () => {
+    setIsOpponentTyping(true);
+    const opponentPosition = position === "POUR" ? "CONTRE" : "POUR";
+    const history = messagesRef.current
+      .filter((m) => m.sender !== "system")
+      .map((m) => ({ role: m.sender as "user" | "opponent", content: m.content }));
+
+    try {
+      const res = await fetch("/api/ai/opponent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topic,
+          opponentPosition,
+          userPosition: position,
+          conversationHistory: history,
+          difficulty: trainingDifficulty,
+        }),
+      });
+      const data = await res.json();
+      addMessage("opponent", data.reply || "Je maintiens ma position.");
+    } catch {
+      addMessage("opponent", "Je maintiens ma position. Votre argument ne me convainc pas.");
+    } finally {
+      setIsOpponentTyping(false);
+      setIsMyTurn(true);
+      setTimeLeft(ROUND_TIME);
     }
   };
 
@@ -163,14 +208,18 @@ export function DebateArena() {
         },
         current_state: {
           round_number: turnCount + 1,
-          scores: { A: 50, B: 50 }, // Starting point
+          scores: { A: scores.A, B: scores.B },
           momentum: "neutral"
         },
-        conversation_history: messages.filter(m => m.sender !== "system").map(m => ({
-          round: Math.ceil(messages.filter(msg => msg.sender !== "system").indexOf(m) / 2) + 1,
-          player: m.sender === "user" ? "A" : "B",
-          message: m.content
-        })),
+        context_history: (() => {
+          const nonSystem = messages.filter(m => m.sender !== "system");
+          // Send only the last 4 messages as context — enough for coherence,
+          // too few for the LLM to accidentally score old turns.
+          return nonSystem.slice(-4).map(m => ({
+            player: m.sender === "user" ? "A" : "B",
+            message: m.content,
+          }));
+        })(),
         message_to_evaluate: {
           player: "A",
           message: userMsg
@@ -186,6 +235,11 @@ export function DebateArena() {
       if (res.ok) {
         const data = await res.json();
         setLiveEvaluation(data);
+        if (data.score_update) {
+          const { player, new_score } = data.score_update;
+          const clamped = Math.max(0, Math.min(100, new_score));
+          setScores((prev) => ({ ...prev, [player]: clamped }));
+        }
       }
     } catch (e) {
       console.error("Live evaluation failed:", e);
@@ -287,6 +341,18 @@ export function DebateArena() {
             <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Tour</h3>
             <div className="text-2xl font-bold text-slate-900 dark:text-white">{turnCount + 1}/6</div>
           </div>
+
+          {gameMode === "training" && trainingDifficulty && (
+            <div className="mb-4">
+              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Difficulté IA</h3>
+              <span className={cn(
+                "font-bold text-sm",
+                DIFFICULTY_LABELS[trainingDifficulty]?.color
+              )}>
+                {DIFFICULTY_LABELS[trainingDifficulty]?.label}
+              </span>
+            </div>
+          )}
         </div>
 
         <Button variant="destructive" onClick={handleEndDebate}>
@@ -341,6 +407,21 @@ export function DebateArena() {
               )}
             </motion.div>
           ))}
+
+          {/* AI typing indicator */}
+          {isOpponentTyping && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex justify-start"
+            >
+              <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl rounded-bl-none px-4 py-3 shadow-sm flex items-center gap-1.5">
+                <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce [animation-delay:0ms]" />
+                <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce [animation-delay:150ms]" />
+                <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce [animation-delay:300ms]" />
+              </div>
+            </motion.div>
+          )}
         </div>
 
         {/* Input */}
@@ -351,7 +432,7 @@ export function DebateArena() {
               rows={3}
               placeholder={isMyTurn ? "Votre argument..." : "Attendez votre tour..."}
               value={inputText}
-              onChange={(e) => setInputText(e.target.value.slice(0, MAX_CHARS))}
+              onChange={(e) => setInputText(e.target.value.slice(0, MAX_PLAYER_CHARS))}
               disabled={!isMyTurn}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -361,8 +442,8 @@ export function DebateArena() {
               }}
             />
             <div className="absolute bottom-3 right-3 flex items-center gap-2">
-              <span className={cn("text-xs", inputText.length > MAX_CHARS * 0.9 ? "text-red-500" : "text-slate-400")}>
-                {inputText.length}/{MAX_CHARS}
+              <span className={cn("text-xs", inputText.length > MAX_PLAYER_CHARS * 0.9 ? "text-red-500" : "text-slate-400")}>
+                {inputText.length}/{MAX_PLAYER_CHARS}
               </span>
               <Button
                 size="icon"
@@ -436,7 +517,7 @@ export function DebateArena() {
                                 <div>
                                   <span className={cn(
                                     "font-bold block mb-0.5",
-                                    ev.type === "sophism" || ev.type === "ad_hominem"
+                                    ev.type === "sophism" || ev.type === "ad_hominem" || ev.type === "wrong_side"
                                       ? "text-red-500"
                                       : "text-indigo-500"
                                   )}>
@@ -445,9 +526,11 @@ export function DebateArena() {
                                   <span className="text-slate-600 dark:text-slate-300">{ev.description}</span>
                                 </div>
                                 <span className={cn(
-                                   "ml-2 px-1.5 py-0.5 rounded-full text-[10px] whitespace-nowrap",
-                                   ev.severity === 'high' ? 'bg-red-100 text-red-600' : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
-                                )}>{ev.impact_score} pts</span>
+                                   "ml-2 px-1.5 py-0.5 rounded-full text-[10px] whitespace-nowrap capitalize",
+                                   ev.severity === 'high' ? 'bg-red-100 text-red-600' :
+                                   ev.severity === 'medium' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400' :
+                                   'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-300'
+                                )}>{ev.severity}</span>
                               </li>
                            ))}
                          </ul>

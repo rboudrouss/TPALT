@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { buildAnalyzeDebatePrompt, buildHintPrompt, buildFactCheckPrompt } from "@/lib/prompts";
 
 let aiInstance: GoogleGenAI | null = null;
 
@@ -30,39 +31,7 @@ export async function analyzeDebate(
   topic: string,
   messages: { sender: string; content: string }[]
 ): Promise<DebateAnalysis> {
-  const prompt = `Tu es un expert en rhétorique et en analyse de débats. Analyse le débat suivant et fournis une évaluation détaillée.
-
-Sujet du débat: "${topic}"
-
-Messages du débat:
-${messages.map((m) => `${m.sender}: ${m.content}`).join("\n")}
-
-Pour le champ "sophisms", inclus TOUS les sophismes logiques détectés, y compris :
-- Ad hominem (attaque personnelle plutôt que de l'argument)
-- Homme de paille (déformation de l'argument adverse)
-- Pente glissante
-- Fausse dichotomie
-- Appel à l'autorité non pertinent
-- Généralisation hâtive
-- Et tout autre sophisme ou paralogisme identifiable.
-Chaque entrée doit avoir un "name" normalisé (ex: "Ad Hominem", "Homme de Paille"), un "count" et un "context".
-
-Réponds en JSON valide avec cette structure exacte:
-{
-  "overallScore": <score global de 0 à 100>,
-  "argumentQuality": <qualité des arguments de 0 à 100>,
-  "rhetoricStyle": <style rhétorique de 0 à 100>,
-  "logicalCoherence": <cohérence logique de 0 à 100>,
-  "factChecking": <exactitude factuelle de 0 à 100>,
-  "sophisms": [{"name": "<nom normalisé du sophisme>", "count": <nombre d'occurrences>, "context": "<brève citation ou contexte>"}],
-  "biases": [{"name": "<nom du biais cognitif>", "context": "<contexte>"}],
-  "strengths": ["<point fort 1>", "<point fort 2>"],
-  "weaknesses": ["<point faible 1>", "<point faible 2>"],
-  "player1Score": <score joueur 1 de 0 à 100>,
-  "player2Score": <score joueur 2 de 0 à 100>
-}
-
-Réponds UNIQUEMENT avec le JSON, sans markdown ni texte supplémentaire.`;
+  const prompt = buildAnalyzeDebatePrompt(topic, messages);
 
   try {
     const ai = getAI();
@@ -106,13 +75,7 @@ export async function getAIHint(
   position: string,
   lastMessages: { sender: string; content: string }[]
 ): Promise<string> {
-  const prompt = `Tu es un coach de débat. Le sujet est: "${topic}". 
-Le joueur défend la position: "${position}".
-
-Derniers messages:
-${lastMessages.map((m) => `${m.sender}: ${m.content}`).join("\n")}
-
-Donne un conseil court et utile (max 2 phrases) pour aider le joueur à améliorer son prochain argument. Pas de markdown.`;
+  const prompt = buildHintPrompt(topic, position, lastMessages);
 
   try {
     const ai = getAI();
@@ -130,8 +93,7 @@ Donne un conseil court et utile (max 2 phrases) pour aider le joueur à amélior
 }
 
 export async function factCheck(claim: string): Promise<string> {
-  const prompt = `Vérifie rapidement cette affirmation: "${claim}"
-Réponds en 1-2 phrases courtes indiquant si c'est vrai, faux, ou partiellement vrai. Pas de markdown.`;
+  const prompt = buildFactCheckPrompt(claim);
 
   try {
     const ai = getAI();
