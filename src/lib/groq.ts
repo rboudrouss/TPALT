@@ -3,6 +3,12 @@ import { buildAnalyzeDebatePrompt, buildHintPrompt, buildFactCheckPrompt } from 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const GROQ_MODEL = "llama-3.3-70b-versatile";
 
+function isAIDisabled(): boolean {
+  if (process.env.DISABLE_IA === "true") return true;
+  if (process.env.DISABLE_IA === "false") return false;
+  return !process.env.LLM_API_KEY;
+}
+
 export interface GroqCallOptions {
   url?: string;
   model?: string;
@@ -21,6 +27,13 @@ export async function callGroq(
   messages: GroqMessage[],
   options: GroqCallOptions = {}
 ): Promise<string> {
+  if (isAIDisabled()) {
+    const stub = options.response_format?.type === "json_object"
+      ? '{"stub":true}'
+      : "Réponse IA désactivée (mode stub).";
+    return stub;
+  }
+
   const url = options.url ?? process.env.LLM_API_URL ?? GROQ_URL;
   const model = options.model ?? process.env.LLM_MODEL ?? GROQ_MODEL;
   const key = options.apiKey ?? process.env.LLM_API_KEY;
@@ -65,10 +78,26 @@ export interface DebateAnalysis {
   player2Score: number;
 }
 
+const STUB_ANALYSIS: DebateAnalysis = {
+  overallScore: 75,
+  argumentQuality: 80,
+  rhetoricStyle: 70,
+  logicalCoherence: 85,
+  factChecking: 65,
+  sophisms: [{ name: "Ad Hominem", count: 1, context: "Attaque personnelle détectée" }],
+  biases: [{ name: "Biais de confirmation", context: "Recherche sélective d'arguments" }],
+  strengths: ["Bonne structuration des arguments", "Usage pertinent d'exemples"],
+  weaknesses: ["Manque de sources factuelles", "Quelques généralisations hâtives"],
+  player1Score: 78,
+  player2Score: 72,
+};
+
 export async function analyzeDebate(
   topic: string,
   messages: { sender: string; content: string }[]
 ): Promise<DebateAnalysis> {
+  if (isAIDisabled()) return STUB_ANALYSIS;
+
   const prompt = buildAnalyzeDebatePrompt(topic, messages);
 
   try {
@@ -79,21 +108,7 @@ export async function analyzeDebate(
     return JSON.parse(text) as DebateAnalysis;
   } catch (error) {
     console.error("Groq analyzeDebate error:", error);
-    return {
-      overallScore: 75,
-      argumentQuality: 80,
-      rhetoricStyle: 70,
-      logicalCoherence: 85,
-      factChecking: 65,
-      sophisms: [
-        { name: "Ad Hominem", count: 1, context: "Attaque personnelle détectée" },
-      ],
-      biases: [{ name: "Biais de confirmation", context: "Recherche sélective d'arguments" }],
-      strengths: ["Bonne structuration des arguments", "Usage pertinent d'exemples"],
-      weaknesses: ["Manque de sources factuelles", "Quelques généralisations hâtives"],
-      player1Score: 78,
-      player2Score: 72,
-    };
+    return STUB_ANALYSIS;
   }
 }
 
