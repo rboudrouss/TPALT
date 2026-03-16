@@ -16,6 +16,31 @@ export default function DashboardPage() {
     if (!user) router.replace("/");
   }, [user, router]);
 
+  // Refresh user stats from API on mount
+  useEffect(() => {
+    if (!user) return;
+    fetch(`/api/users/${user.id}`)
+      .then((res) => res.ok ? res.json() : null)
+      .then((data) => {
+        if (data) {
+          dispatch({
+            type: "SET_USER",
+            payload: {
+              id: data.id,
+              username: data.username,
+              elo: data.elo,
+              level: data.level,
+              xp: data.xp,
+              wins: data.wins,
+              losses: data.losses,
+            },
+          });
+        }
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleSelectMode = (mode: "training" | "casual" | "ranked") => {
     dispatch({ type: "SET_GAME_MODE", payload: mode });
     router.push("/matchmaking");
