@@ -1,19 +1,11 @@
 "use client";
-
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "motion/react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bot, Swords, Trophy, User, LogOut } from "lucide-react";
+import { User, LogOut } from "lucide-react";
 import { useApp } from "@/lib/store";
+import { GameModeGrid } from "./components/GameModeGrid";
+import { StatsPanel } from "./components/StatsPanel";
 
 export default function DashboardPage() {
   const { state, dispatch } = useApp();
@@ -36,9 +28,10 @@ export default function DashboardPage() {
 
   if (!user) return null;
 
-  const winRate = user.wins + user.losses > 0
-    ? Math.round((user.wins / (user.wins + user.losses)) * 100)
-    : 0;
+  const winRate =
+    user.wins + user.losses > 0
+      ? Math.round((user.wins / (user.wins + user.losses)) * 100)
+      : 0;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-8">
@@ -47,12 +40,7 @@ export default function DashboardPage() {
           Bonjour, {user.username}
         </h1>
         <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push("/profile")}
-            title="Profil"
-          >
+          <Button variant="ghost" size="icon" onClick={() => router.push("/profile")} title="Profil">
             <User className="h-5 w-5" />
           </Button>
           <Button variant="ghost" size="icon" onClick={handleLogout} title="Déconnexion">
@@ -65,95 +53,15 @@ export default function DashboardPage() {
         <h2 className="text-xl font-semibold mb-6 text-slate-700 dark:text-slate-300">
           Choisir un mode de jeu
         </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <GameModeCard
-            title="Entraînement"
-            description="Perfectionnez vos arguments contre une IA adaptative sans pression."
-            icon={<Bot className="h-10 w-10 text-emerald-500" />}
-            onClick={() => handleSelectMode("training")}
-            delay={0.1}
-          />
-          <GameModeCard
-            title="Casual"
-            description="Débats amicaux. Sujet imposé, position libre. Idéal pour s'échauffer."
-            icon={<Swords className="h-10 w-10 text-amber-500" />}
-            onClick={() => handleSelectMode("casual")}
-            delay={0.2}
-          />
-          <GameModeCard
-            title="Classé"
-            description="La compétition pure. Sujet et position imposés. Grimpez le classement Elo."
-            icon={<Trophy className="h-10 w-10 text-indigo-500" />}
-            onClick={() => handleSelectMode("ranked")}
-            delay={0.3}
-          />
-        </div>
+        <GameModeGrid onSelectMode={handleSelectMode} />
 
         <div className="mt-12">
           <h2 className="text-xl font-semibold mb-6 text-slate-700 dark:text-slate-300">
             Statistiques
           </h2>
-          <Card>
-            <CardContent className="p-6">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                <StatItem label="Niveau Elo" value={user.elo.toString()} />
-                <StatItem label="Victoires" value={user.wins.toString()} />
-                <StatItem label="Défaites" value={user.losses.toString()} />
-                <StatItem label="Taux de victoire" value={`${winRate}%`} />
-              </div>
-            </CardContent>
-          </Card>
+          <StatsPanel elo={user.elo} wins={user.wins} losses={user.losses} winRate={winRate} />
         </div>
       </main>
-    </div>
-  );
-}
-
-function GameModeCard({
-  title,
-  description,
-  icon,
-  onClick,
-  delay,
-}: {
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  onClick: () => void;
-  delay: number;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.5 }}
-      whileHover={{ y: -5 }}
-    >
-      <Card
-        className="h-full hover:shadow-lg transition-shadow cursor-pointer"
-        onClick={onClick}
-      >
-        <CardHeader>
-          <div className="mb-4">{icon}</div>
-          <CardTitle>{title}</CardTitle>
-          <CardDescription>{description}</CardDescription>
-        </CardHeader>
-        <CardFooter>
-          <Button className="w-full" variant="outline">
-            Jouer
-          </Button>
-        </CardFooter>
-      </Card>
-    </motion.div>
-  );
-}
-
-function StatItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div className="text-2xl font-bold text-slate-900 dark:text-white">{value}</div>
-      <div className="text-sm text-slate-500 dark:text-slate-400">{label}</div>
     </div>
   );
 }
