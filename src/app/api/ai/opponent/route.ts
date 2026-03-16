@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { callGroq } from "@/lib/groq";
 import {
   Difficulty,
   OPPONENT_DIFFICULTY_PROMPTS,
@@ -29,10 +30,6 @@ export async function POST(req: Request) {
       apiKey?: string;
     } = body;
 
-    const url = apiUrl || process.env.LLM_API_URL || "https://api.groq.com/openai/v1/chat/completions";
-    const model = modelName || process.env.LLM_MODEL || "llama-3.3-70b-versatile";
-    const key = apiKey || process.env.LLM_API_KEY || "your_api_key_here";
-
     const systemPrompt = OPPONENT_DIFFICULTY_PROMPTS[difficulty] ?? OPPONENT_DIFFICULTY_PROMPTS.medium;
     const { temperature, max_tokens } = OPPONENT_DIFFICULTY_SETTINGS[difficulty] ?? OPPONENT_DIFFICULTY_SETTINGS.medium;
 
@@ -44,34 +41,17 @@ export async function POST(req: Request) {
 
     const userPrompt = buildOpponentUserPrompt(topic, opponentPosition, userPosition, historyText);
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${key}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        temperature,
-        max_tokens,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`LLM API Error: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    const reply: string = data.choices[0].message.content.trim();
+    const reply = await callGroq(
+      [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      { url: apiUrl, model: modelName, apiKey, temperature, max_tokens }
+    );
 
     return NextResponse.json({ reply });
   } catch (error) {
     console.error("Opponent generation error:", error);
-    // Graceful fallback so the debate isn't blocked
     return NextResponse.json(
       { reply: "C'est un point intéressant, mais je ne suis pas convaincu. Votre raisonnement manque de preuves concrètes." },
       { status: 200 }

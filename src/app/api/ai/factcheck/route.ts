@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { factCheck } from "@/lib/gemini";
+import { factCheck } from "@/lib/groq";
 
 export async function POST(request: NextRequest) {
   try {

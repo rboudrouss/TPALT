@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { analyzeDebate } from "@/lib/gemini";
+import { analyzeDebate } from "@/lib/groq";
 
 export async function POST(
   request: NextRequest,
@@ -31,7 +31,6 @@ export async function POST(
       content: m.content,
     }));
 
-    // Analyze with Gemini
     const analysisResult = await analyzeDebate(debate.topic, formattedMessages);
 
     // Save analysis to database

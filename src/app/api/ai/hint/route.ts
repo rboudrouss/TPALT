@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAIHint } from "@/lib/gemini";
+import { getAIHint } from "@/lib/groq";
 
 export async function POST(request: NextRequest) {
   try {
