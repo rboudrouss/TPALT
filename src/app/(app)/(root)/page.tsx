@@ -1,18 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowRight, Gavel, Sparkles, Users } from "lucide-react";
 import { useApp } from "@/lib/store";
 
-export function Landing() {
-  const { dispatch } = useApp();
+export default function Home() {
+  const { state, dispatch } = useApp();
+  const router = useRouter();
   const [showLogin, setShowLogin] = useState(false);
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (state.user) router.replace("/dashboard");
+  }, [state.user, router]);
 
   const handleLogin = async () => {
     if (username.length < 3) {
@@ -36,13 +42,15 @@ export function Landing() {
 
       const user = await res.json();
       dispatch({ type: "SET_USER", payload: user });
-      dispatch({ type: "SET_VIEW", payload: "dashboard" });
+      router.push("/dashboard");
     } catch {
       setError("Erreur de connexion. Réessayez.");
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (state.user) return null;
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center bg-black overflow-hidden">
@@ -158,4 +166,3 @@ function Feature({ icon, title, desc }: { icon: React.ReactNode; title: string; 
     </div>
   );
 }
-

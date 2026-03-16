@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Send, ShieldAlert, Clock, BrainCircuit, User } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -36,10 +37,15 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   wrong_side: "Mauvais camp ⚠️",
 };
 
-export function DebateArena() {
+export default function DebatePage() {
   const { state, dispatch } = useApp();
+  const router = useRouter();
   const { gameMode, trainingDifficulty, currentDebateId, playerRole, user } = state;
   const isMultiplayer = gameMode === "casual" || gameMode === "ranked";
+
+  useEffect(() => {
+    if (!user) router.replace("/");
+  }, [user, router]);
 
   // ── Shared state ──────────────────────────────────────────────────────────
   const [topic, setTopic] = useState(getRandomTopic);
@@ -433,8 +439,8 @@ export function DebateArena() {
         },
       });
     }
-    dispatch({ type: "SET_VIEW", payload: "analysis" });
-  }, [currentDebateId, cheatCount, topic, user, opponentName, dispatch]);
+    router.push("/analysis");
+  }, [currentDebateId, cheatCount, topic, user, opponentName, dispatch, router]);
 
   // Keep ref up to date so the WS onmessage closure always calls the latest version
   useEffect(() => {
@@ -447,6 +453,8 @@ export function DebateArena() {
       handleEndDebate();
     }
   }, [turnCount, handleEndDebate, isMultiplayer]);
+
+  if (!user) return null;
 
   if (!debateReady) {
     return (

@@ -1,37 +1,39 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, AlertTriangle, BarChart3, ArrowRight, Home } from "lucide-react";
 import { useApp } from "@/lib/store";
 
-export function Analysis() {
+export default function AnalysisPage() {
   const { state, dispatch } = useApp();
+  const router = useRouter();
   const { analysisData } = state;
+
+  useEffect(() => {
+    if (!state.user) router.replace("/");
+    else if (!analysisData) router.replace("/dashboard");
+  }, [state.user, analysisData, router]);
 
   const handleHome = () => {
     dispatch({ type: "SET_ANALYSIS", payload: null });
     dispatch({ type: "SET_DEBATE_ID", payload: null });
     dispatch({ type: "SET_GAME_MODE", payload: null });
-    dispatch({ type: "SET_VIEW", payload: "dashboard" });
+    router.push("/dashboard");
   };
 
   const handleNewMatch = () => {
     dispatch({ type: "SET_ANALYSIS", payload: null });
     dispatch({ type: "SET_DEBATE_ID", payload: null });
-    dispatch({ type: "SET_VIEW", payload: "matchmaking" });
+    router.push("/matchmaking");
   };
 
-  if (!analysisData) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Chargement de l&apos;analyse...</p>
-      </div>
-    );
-  }
+  if (!state.user || !analysisData) return null;
 
-  const scoreLabel = analysisData.overallScore >= 80 ? "Excellent" : 
+  const scoreLabel = analysisData.overallScore >= 80 ? "Excellent" :
                      analysisData.overallScore >= 60 ? "Bien" : "À améliorer";
 
   return (
@@ -156,4 +158,3 @@ function SkillBar({ label, percentage, color }: { label: string; percentage: num
     </div>
   );
 }
-

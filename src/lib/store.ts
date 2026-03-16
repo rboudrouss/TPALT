@@ -16,7 +16,6 @@ export type TrainingDifficulty = "easy" | "medium" | "hard";
 
 export interface AppState {
   user: User | null;
-  currentView: "landing" | "dashboard" | "matchmaking" | "debate" | "analysis" | "profile";
   gameMode: "training" | "casual" | "ranked" | null;
   trainingDifficulty: TrainingDifficulty | null;
   currentDebateId: string | null;
@@ -41,7 +40,6 @@ export interface AnalysisData {
 
 export type AppAction =
   | { type: "SET_USER"; payload: User | null }
-  | { type: "SET_VIEW"; payload: AppState["currentView"] }
   | { type: "SET_GAME_MODE"; payload: AppState["gameMode"] }
   | { type: "SET_TRAINING_DIFFICULTY"; payload: TrainingDifficulty | null }
   | { type: "SET_DEBATE_ID"; payload: string | null }
@@ -51,7 +49,6 @@ export type AppAction =
 
 export const initialState: AppState = {
   user: null,
-  currentView: "landing",
   gameMode: null,
   trainingDifficulty: null,
   currentDebateId: null,
@@ -63,8 +60,6 @@ export function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
     case "SET_USER":
       return { ...state, user: action.payload };
-    case "SET_VIEW":
-      return { ...state, currentView: action.payload };
     case "SET_GAME_MODE":
       return { ...state, gameMode: action.payload };
     case "SET_TRAINING_DIFFICULTY":

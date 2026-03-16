@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Loader2, Zap, Sword, Brain } from "lucide-react";
 import { useApp, TrainingDifficulty } from "@/lib/store";
@@ -45,14 +46,20 @@ const DIFFICULTIES: {
   },
 ];
 
-export function Matchmaking() {
+export default function MatchmakingPage() {
   const { state, dispatch } = useApp();
+  const router = useRouter();
   const [status, setStatus] = useState("Recherche d'un adversaire...");
   const [difficultySelected, setDifficultySelected] = useState(
     state.gameMode !== "training"
   );
   const [selectedDifficulty, setSelectedDifficulty] = useState<TrainingDifficulty>("medium");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (!state.user) router.replace("/");
+    else if (!state.gameMode) router.replace("/dashboard");
+  }, [state.user, state.gameMode, router]);
 
   const stopPolling = () => {
     if (pollRef.current) {
@@ -71,7 +78,7 @@ export function Matchmaking() {
     dispatch({ type: "SET_GAME_MODE", payload: null });
     dispatch({ type: "SET_TRAINING_DIFFICULTY", payload: null });
     dispatch({ type: "SET_PLAYER_ROLE", payload: null });
-    dispatch({ type: "SET_VIEW", payload: "dashboard" });
+    router.push("/dashboard");
   };
 
   useEffect(() => {
@@ -95,10 +102,10 @@ export function Matchmaking() {
             const debate = await res.json();
             dispatch({ type: "SET_DEBATE_ID", payload: debate.id });
             dispatch({ type: "SET_PLAYER_ROLE", payload: "player1" });
+            router.push(`/debate/${debate.id}`);
           } catch {
             console.error("Failed to create training debate");
           }
-          dispatch({ type: "SET_VIEW", payload: "debate" });
         }, 6000),
       ];
       return () => timers.forEach(clearTimeout);
@@ -130,7 +137,7 @@ export function Matchmaking() {
           });
           dispatch({ type: "SET_DEBATE_ID", payload: joinable.id });
           dispatch({ type: "SET_PLAYER_ROLE", payload: "player2" });
-          dispatch({ type: "SET_VIEW", payload: "debate" });
+          router.push(`/debate/${joinable.id}`);
           return;
         }
 
@@ -154,7 +161,7 @@ export function Matchmaking() {
             if (updated.player2Id) {
               stopPolling();
               setStatus("Adversaire trouvé ! Connexion à l'arène...");
-              dispatch({ type: "SET_VIEW", payload: "debate" });
+              router.push(`/debate/${debate.id}`);
             }
           } catch {
             // ignore polling errors
@@ -168,13 +175,15 @@ export function Matchmaking() {
 
     startMultiplayer();
     return () => stopPolling();
-  }, [difficultySelected, dispatch, state.gameMode, state.user]);
+  }, [difficultySelected, dispatch, state.gameMode, state.user, router]);
 
   const modeLabels = {
     training: "Entraînement",
     casual: "Casual",
     ranked: "Classé",
   };
+
+  if (!state.user || !state.gameMode) return null;
 
   // ── Difficulty selector (training only) ──────────────────────────────────
   if (!difficultySelected && state.gameMode === "training") {

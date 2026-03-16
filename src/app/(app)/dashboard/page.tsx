@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import {
   Card,
@@ -10,20 +12,26 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bot, Swords, Trophy, History, User, LogOut } from "lucide-react";
+import { Bot, Swords, Trophy, User, LogOut } from "lucide-react";
 import { useApp } from "@/lib/store";
 
-export function Dashboard() {
+export default function DashboardPage() {
   const { state, dispatch } = useApp();
+  const router = useRouter();
   const { user } = state;
+
+  useEffect(() => {
+    if (!user) router.replace("/");
+  }, [user, router]);
 
   const handleSelectMode = (mode: "training" | "casual" | "ranked") => {
     dispatch({ type: "SET_GAME_MODE", payload: mode });
-    dispatch({ type: "SET_VIEW", payload: "matchmaking" });
+    router.push("/matchmaking");
   };
 
   const handleLogout = () => {
     dispatch({ type: "LOGOUT" });
+    router.push("/");
   };
 
   if (!user) return null;
@@ -42,7 +50,7 @@ export function Dashboard() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => dispatch({ type: "SET_VIEW", payload: "profile" })}
+            onClick={() => router.push("/profile")}
             title="Profil"
           >
             <User className="h-5 w-5" />
@@ -149,4 +157,3 @@ function StatItem({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-

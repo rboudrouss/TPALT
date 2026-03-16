@@ -13,7 +13,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       try {
         const user: User = JSON.parse(savedUser);
         dispatch({ type: "SET_USER", payload: user });
-        dispatch({ type: "SET_VIEW", payload: "dashboard" });
       } catch {
         localStorage.removeItem("rhetorica_user");
       }

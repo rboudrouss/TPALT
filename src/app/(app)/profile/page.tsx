@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -103,8 +104,9 @@ function computeAverageScore(debates: DebateRecord[], userId: string): string {
   return ((scores.reduce((a, b) => a + b, 0) / scores.length) / 10).toFixed(1) + "/10";
 }
 
-export function Profile() {
-  const { state, dispatch } = useApp();
+export default function ProfilePage() {
+  const { state } = useApp();
+  const router = useRouter();
   const { user } = state;
   const [activeTab, setActiveTab] = useState<"overview" | "history" | "achievements">("overview");
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -113,6 +115,10 @@ export function Profile() {
     { category: string; items: AchievementResult[] }[]
   >([]);
   const [achievementsLoading, setAchievementsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!user) router.replace("/");
+  }, [user, router]);
 
   useEffect(() => {
     if (!user) return;
@@ -163,7 +169,7 @@ export function Profile() {
         <div className="relative z-10 container mx-auto px-4 py-8">
           <Button
             variant="ghost"
-            onClick={() => dispatch({ type: "SET_VIEW", payload: "dashboard" })}
+            onClick={() => router.push("/dashboard")}
             className="text-white hover:bg-white/10 mb-6"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -377,4 +383,3 @@ function StatCard({ icon, label, value, trend }: { icon: React.ReactNode; label:
     </Card>
   );
 }
-
