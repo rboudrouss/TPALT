@@ -159,7 +159,7 @@ export function Matchmaking() {
           } catch {
             // ignore polling errors
           }
-        }, 2000);
+        }, 500);
       } catch (error) {
         console.error("Matchmaking error:", error);
         setStatus("Erreur de connexion. Réessayez...");

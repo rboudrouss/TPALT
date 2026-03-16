@@ -46,11 +46,11 @@ export function DebateArena() {
   const [position, setPosition] = useState<"POUR" | "CONTRE">("POUR");
   const [opponentName, setOpponentName] = useState("Adversaire");
   const [messages, setMessages] = useState<Message[]>([
-    { id: "0", sender: "system", content: "Le débat commence ! Vous avez la parole.", timestamp: new Date() },
+    { id: "0", sender: "system", content: "Connexion au débat...", timestamp: new Date() },
   ]);
   const [inputText, setInputText] = useState("");
   const [timeLeft, setTimeLeft] = useState(ROUND_TIME);
-  const [isMyTurn, setIsMyTurn] = useState(true);
+  const [isMyTurn, setIsMyTurn] = useState(!isMultiplayer); // multiplayer: wait for server
   const [turnCount, setTurnCount] = useState(0);
   const [cheatCount, setCheatCount] = useState(0);
   const [showCheatWarning, setShowCheatWarning] = useState(false);
@@ -64,111 +64,122 @@ export function DebateArena() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const dbMessageCountRef = useRef(0);
+  const wsRef = useRef<WebSocket | null>(null);
+  const handleEndDebateRef = useRef<(() => void) | null>(null);
 
-  const stopPolling = () => {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
-  };
-
-  // ── Multiplayer: load debate state on mount ───────────────────────────────
+  // ── Multiplayer: WebSocket connection ────────────────────────────────────
   useEffect(() => {
-    if (!isMultiplayer || !currentDebateId) return;
+    if (!isMultiplayer || !currentDebateId || !user) return;
 
-    const loadDebate = async () => {
-      try {
-        const res = await fetch(`/api/debates/${currentDebateId}`);
-        const debate = await res.json();
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+    wsRef.current = ws;
 
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ type: "join", debateId: currentDebateId, userId: user.id }));
+    };
+
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+
+      if (msg.type === "state") {
+        // Load debate metadata — debateReady is set only by debate_ready event
+        const debate = msg.debate;
         setTopic(debate.topic);
-        const myPosition = playerRole === "player1" ? debate.player1Position : debate.player2Position;
-        setPosition(myPosition ?? "POUR");
-
+        const myPos = playerRole === "player1" ? debate.player1Position : debate.player2Position;
+        setPosition(myPos ?? "POUR");
         const opponent = playerRole === "player1" ? debate.player2 : debate.player1;
         if (opponent) setOpponentName(opponent.username);
 
-        // Load existing messages (if any)
         if (debate.messages && debate.messages.length > 0) {
           const loaded: Message[] = debate.messages.map((m: any) => ({
             id: m.id,
-            sender: m.senderId === user?.id ? "user" : "opponent",
+            sender: m.senderId === user.id ? "user" : "opponent",
             content: m.content,
             timestamp: new Date(m.createdAt),
           }));
           setMessages([
-            { id: "0", sender: "system", content: "Le débat commence ! Vous avez la parole.", timestamp: new Date() },
+            { id: "0", sender: "system", content: "Connexion au débat...", timestamp: new Date() },
             ...loaded,
           ]);
-          dbMessageCountRef.current = debate.messages.length;
-          // Determine turn from message count
-          const myTurn = debate.messages.length % 2 === (playerRole === "player1" ? 0 : 1);
-          setIsMyTurn(myTurn);
           setTurnCount(debate.messages.length);
         }
+      }
 
+      if (msg.type === "debate_ready") {
+        const isFirst = msg.currentTurn === playerRole;
+        setIsMyTurn(isFirst);
+        setIsOpponentTyping(!isFirst);
         setDebateReady(true);
-      } catch (err) {
-        console.error("Failed to load debate state:", err);
+        setMessages((prev) => {
+          // Replace initial "Connexion..." message
+          const rest = prev.filter((m) => m.id !== "0");
+          return [
+            {
+              id: "0",
+              sender: "system",
+              content: isFirst
+                ? "Le débat commence ! Vous avez la parole en premier."
+                : "Le débat commence ! L'adversaire parle en premier.",
+              timestamp: new Date(),
+            },
+            ...rest,
+          ];
+        });
+        setTimeLeft(ROUND_TIME);
+      }
+
+      if (msg.type === "new_message") {
+        const m = msg.message;
+        const isMyMsg = m.senderId === user.id;
+
+        if (!isMyMsg) {
+          // Opponent's message arrived
+          setIsOpponentTyping(false);
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: m.id,
+              sender: "opponent",
+              content: m.content,
+              timestamp: new Date(m.createdAt),
+            },
+          ]);
+        }
+
+        const nowMyTurn = msg.currentTurn === playerRole;
+        setIsMyTurn(nowMyTurn);
+        setIsOpponentTyping(!nowMyTurn);
+        setTurnCount(msg.messageCount);
+        setTimeLeft(ROUND_TIME);
+      }
+
+      if (msg.type === "turn_changed") {
+        const nowMyTurn = msg.currentTurn === playerRole;
+        setIsMyTurn(nowMyTurn);
+        setIsOpponentTyping(!nowMyTurn);
+        setTimeLeft(ROUND_TIME);
+      }
+
+      if (msg.type === "debate_ended") {
+        handleEndDebateRef.current?.();
+      }
+
+      if (msg.type === "error" && msg.code !== "NOT_YOUR_TURN") {
+        console.error("WS error:", msg.message);
       }
     };
 
-    loadDebate();
-  }, [isMultiplayer, currentDebateId, playerRole, user?.id]);
+    ws.onclose = () => {
+      wsRef.current = null;
+    };
 
-  // ── Multiplayer: poll for opponent messages ───────────────────────────────
-  useEffect(() => {
-    if (!isMultiplayer || !currentDebateId || !debateReady) return;
-    if (isMyTurn) {
-      stopPolling();
-      return;
-    }
-
-    setIsOpponentTyping(true);
-
-    pollRef.current = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/debates/${currentDebateId}`);
-        const debate = await res.json();
-
-        if (debate.status === "finished") {
-          stopPolling();
-          handleEndDebate();
-          return;
-        }
-
-        const dbMsgs: any[] = debate.messages ?? [];
-        if (dbMsgs.length > dbMessageCountRef.current) {
-          // New message(s) from opponent
-          const newMsgs = dbMsgs.slice(dbMessageCountRef.current);
-          dbMessageCountRef.current = dbMsgs.length;
-
-          setIsOpponentTyping(false);
-          stopPolling();
-
-          setMessages((prev) => [
-            ...prev,
-            ...newMsgs.map((m: any) => ({
-              id: m.id,
-              sender: (m.senderId === user?.id ? "user" : "opponent") as "user" | "opponent",
-              content: m.content,
-              timestamp: new Date(m.createdAt),
-            })),
-          ]);
-
-          setTurnCount((prev) => prev + newMsgs.length);
-          setIsMyTurn(true);
-          setTimeLeft(ROUND_TIME);
-        }
-      } catch {
-        // ignore polling errors
-      }
-    }, 2000);
-
-    return () => stopPolling();
-  }, [isMyTurn, isMultiplayer, currentDebateId, debateReady]);
+    return () => {
+      ws.close();
+      wsRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMultiplayer, currentDebateId, user?.id, playerRole]);
 
   // ── Anti-Cheat: Visibility Change ─────────────────────────────────────────
   useEffect(() => {
@@ -190,7 +201,12 @@ export function DebateArena() {
       const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
       return () => clearTimeout(timer);
     } else if (isMyTurn) {
-      handleTurnSwitch();
+      if (isMultiplayer && currentDebateId && wsRef.current?.readyState === WebSocket.OPEN) {
+        // Notify server that this player's turn timed out
+        wsRef.current.send(JSON.stringify({ type: "timeout", debateId: currentDebateId }));
+      } else {
+        handleTurnSwitch();
+      }
     }
   }, [timeLeft, isMyTurn, debateReady]);
 
@@ -229,9 +245,10 @@ export function DebateArena() {
     }
   };
 
+  // ── Training only: turn switch ────────────────────────────────────────────
   const handleTurnSwitch = () => {
     setTimeLeft(ROUND_TIME);
-    setIsMyTurn(!isMyTurn);
+    setIsMyTurn((prev) => !prev);
     setTurnCount((prev) => prev + 1);
 
     if (isMyTurn && !isMultiplayer) {
@@ -280,27 +297,39 @@ export function DebateArena() {
     if (!inputText.trim() || !isMyTurn) return;
 
     const userMsg = inputText;
-    addMessage("user", userMsg);
     setInputText("");
-    handleTurnSwitch();
 
-    // Persist message to DB
-    if (currentDebateId && user) {
-      try {
-        await fetch(`/api/debates/${currentDebateId}/messages`, {
+    if (isMultiplayer && currentDebateId && wsRef.current?.readyState === WebSocket.OPEN) {
+      // Optimistically add message locally
+      addMessage("user", userMsg);
+      setIsOpponentTyping(true);
+      setIsMyTurn(false);
+
+      // Send via WebSocket — server will persist, flip turn, and broadcast
+      wsRef.current.send(
+        JSON.stringify({ type: "message", debateId: currentDebateId, userId: user?.id, content: userMsg })
+      );
+
+      // Live evaluation (fire-and-forget)
+      runLiveEvaluation(userMsg);
+    } else {
+      // Training mode: local flow
+      addMessage("user", userMsg);
+      handleTurnSwitch();
+
+      if (currentDebateId && user) {
+        fetch(`/api/debates/${currentDebateId}/messages`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ senderId: user.id, content: userMsg }),
-        });
-        if (isMultiplayer) {
-          dbMessageCountRef.current += 1;
-        }
-      } catch {
-        console.error("Failed to persist message");
+        }).catch(() => console.error("Failed to persist message"));
       }
-    }
 
-    // Live evaluation
+      runLiveEvaluation(userMsg);
+    }
+  };
+
+  const runLiveEvaluation = async (userMsg: string) => {
     setIsEvaluating(true);
     setLiveEvaluation(null);
     try {
@@ -350,7 +379,9 @@ export function DebateArena() {
   };
 
   const handleEndDebate = useCallback(async () => {
-    stopPolling();
+    wsRef.current?.close();
+    wsRef.current = null;
+
     const analysisMessages = messagesRef.current
       .filter((m) => m.sender !== "system")
       .map((m) => ({
@@ -405,17 +436,22 @@ export function DebateArena() {
     dispatch({ type: "SET_VIEW", payload: "analysis" });
   }, [currentDebateId, cheatCount, topic, user, opponentName, dispatch]);
 
-  // End debate after 6 turns
+  // Keep ref up to date so the WS onmessage closure always calls the latest version
   useEffect(() => {
-    if (turnCount >= 6) {
+    handleEndDebateRef.current = handleEndDebate;
+  }, [handleEndDebate]);
+
+  // End debate after 6 turns (training mode — multiplayer is handled by WS event)
+  useEffect(() => {
+    if (!isMultiplayer && turnCount >= 6) {
       handleEndDebate();
     }
-  }, [turnCount, handleEndDebate]);
+  }, [turnCount, handleEndDebate, isMultiplayer]);
 
   if (!debateReady) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-950 text-white">
-        <div className="animate-pulse text-slate-400">Chargement de l'arène...</div>
+        <div className="animate-pulse text-slate-400">Connexion à l&apos;arène...</div>
       </div>
     );
   }
@@ -475,6 +511,19 @@ export function DebateArena() {
               <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
                 <User className="w-4 h-4" />
                 <span className="font-medium">{opponentName}</span>
+              </div>
+            </div>
+          )}
+
+          {isMultiplayer && (
+            <div className="mb-4">
+              <div className={cn(
+                "text-xs font-semibold px-3 py-1.5 rounded-full text-center",
+                isMyTurn
+                  ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300"
+                  : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+              )}>
+                {isMyTurn ? "Votre tour" : `Tour de ${opponentName}`}
               </div>
             </div>
           )}
@@ -642,7 +691,7 @@ export function DebateArena() {
               <div className="bg-white/50 dark:bg-slate-800/50 p-3 rounded-lg text-sm border border-slate-200 dark:border-slate-700 min-h-[150px]">
                 {isEvaluating ? (
                   <div className="animate-pulse text-slate-400 flex items-center justify-center h-full text-xs italic">
-                    Analyse de l'argument...
+                    Analyse de l&apos;argument...
                   </div>
                 ) : liveEvaluation?.evaluation_summary ? (
                   <div className="space-y-3">
@@ -699,7 +748,7 @@ export function DebateArena() {
                   </div>
                 ) : (
                   <div className="text-slate-400 flex items-center justify-center h-full text-xs italic">
-                    Envoyez un argument pour voir l'analyse.
+                    Envoyez un argument pour voir l&apos;analyse.
                   </div>
                 )}
               </div>
