@@ -51,21 +51,24 @@ export async function POST(
 
     const analysisResult = { ...rawAnalysis, player1Score, player2Score };
 
-    const analysis = await db.analysis.create({
-      data: {
-        debateId,
-        overallScore: analysisResult.overallScore,
-        argumentQuality: analysisResult.argumentQuality,
-        rhetoricStyle: analysisResult.rhetoricStyle,
-        logicalCoherence: analysisResult.logicalCoherence,
-        factChecking: analysisResult.factChecking,
-        sophisms: JSON.stringify(analysisResult.sophisms),
-        biases: JSON.stringify(analysisResult.biases),
-        strengths: JSON.stringify(analysisResult.strengths),
-        weaknesses: JSON.stringify(analysisResult.weaknesses),
-        player1Score: analysisResult.player1Score,
-        player2Score: analysisResult.player2Score,
-      },
+    const analysisData = {
+      overallScore: analysisResult.overallScore,
+      argumentQuality: analysisResult.argumentQuality,
+      rhetoricStyle: analysisResult.rhetoricStyle,
+      logicalCoherence: analysisResult.logicalCoherence,
+      factChecking: analysisResult.factChecking,
+      sophisms: JSON.stringify(analysisResult.sophisms),
+      biases: JSON.stringify(analysisResult.biases),
+      strengths: JSON.stringify(analysisResult.strengths),
+      weaknesses: JSON.stringify(analysisResult.weaknesses),
+      player1Score: analysisResult.player1Score,
+      player2Score: analysisResult.player2Score,
+    };
+
+    const analysis = await db.analysis.upsert({
+      where: { debateId },
+      create: { debateId, ...analysisData },
+      update: analysisData,
     });
 
     await db.debate.update({

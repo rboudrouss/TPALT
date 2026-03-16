@@ -22,7 +22,6 @@ interface Message {
   timestamp: Date;
 }
 
-const MAX_CHARS = 500;
 const ROUND_TIME = 90;
 
 const EVENT_TYPE_LABELS: Record<string, string> = {
@@ -366,6 +365,7 @@ export function DebateArena() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ messages: analysisMessages, cheatCount }),
         });
+        if (!res.ok) throw new Error(`Analyze failed: ${res.status}`);
         const analysis = await res.json();
         dispatch({ type: "SET_ANALYSIS", payload: { ...analysis, topic } });
       } catch {
@@ -644,7 +644,7 @@ export function DebateArena() {
                   <div className="animate-pulse text-slate-400 flex items-center justify-center h-full text-xs italic">
                     Analyse de l'argument...
                   </div>
-                ) : liveEvaluation ? (
+                ) : liveEvaluation?.evaluation_summary ? (
                   <div className="space-y-3">
                     <div className="flex justify-between items-center bg-slate-100 dark:bg-slate-900 p-2 rounded">
                       <span className="text-xs uppercase font-medium text-slate-500">Qualité</span>
@@ -662,9 +662,9 @@ export function DebateArena() {
                       <span className="text-xs uppercase font-medium text-slate-500">Score Delta</span>
                       <span className={cn(
                         "font-bold",
-                        liveEvaluation.score_update.delta > 0 ? "text-green-600" : "text-red-500"
+                        liveEvaluation.score_update?.delta > 0 ? "text-green-600" : "text-red-500"
                       )}>
-                        {liveEvaluation.score_update.delta > 0 ? "+" : ""}{liveEvaluation.score_update.delta}
+                        {liveEvaluation.score_update?.delta > 0 ? "+" : ""}{liveEvaluation.score_update?.delta ?? 0}
                       </span>
                     </div>
 
