@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-echo "Running database migrations..."
-npx prisma migrate deploy
+echo "Running prisma db push..."
+npx prisma db push
 
 echo "Starting server..."
-exec node server.js
+exec npx tsx server.ts
