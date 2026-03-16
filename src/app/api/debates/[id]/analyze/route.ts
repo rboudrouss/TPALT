@@ -8,6 +8,11 @@ export async function POST(
 ) {
   try {
     const { id: debateId } = await params;
+    const body = await request.json().catch(() => ({}));
+    const { messages: bodyMessages, cheatCount = 0 } = body as {
+      messages?: { sender: string; content: string }[];
+      cheatCount?: number;
+    };
 
     const debate = await db.debate.findUnique({
       where: { id: debateId },
@@ -25,15 +30,27 @@ export async function POST(
       return NextResponse.json({ error: "Debate not found" }, { status: 404 });
     }
 
-    // Format messages for analysis
-    const formattedMessages = debate.messages.map((m) => ({
-      sender: m.sender.username,
-      content: m.content,
-    }));
+    // Use messages from request body if provided (training mode),
+    // otherwise fall back to DB messages (multiplayer mode)
+    const formattedMessages: { sender: string; content: string }[] =
+      bodyMessages && bodyMessages.length > 0
+        ? bodyMessages
+        : debate.messages.map((m) => ({
+            sender: m.sender.username,
+            content: m.content,
+          }));
 
-    const analysisResult = await analyzeDebate(debate.topic, formattedMessages);
+    const rawAnalysis = await analyzeDebate(debate.topic, formattedMessages);
 
-    // Save analysis to database
+    // Apply anti-cheat penalty in ranked mode
+    const player1Score =
+      debate.mode === "ranked" && cheatCount >= 3
+        ? Math.max(0, rawAnalysis.player1Score - 30)
+        : rawAnalysis.player1Score;
+    const player2Score = rawAnalysis.player2Score;
+
+    const analysisResult = { ...rawAnalysis, player1Score, player2Score };
+
     const analysis = await db.analysis.create({
       data: {
         debateId,
@@ -51,7 +68,6 @@ export async function POST(
       },
     });
 
-    // Update debate status
     await db.debate.update({
       where: { id: debateId },
       data: {
@@ -68,26 +84,34 @@ export async function POST(
     if (debate.mode !== "training") {
       if (debate.player1) {
         const isWinner = analysisResult.player1Score > analysisResult.player2Score;
+        const p1 = await db.user.findUnique({ where: { id: debate.player1Id } });
+        const newXp = (p1?.xp ?? 0) + analysisResult.player1Score;
+        const newLevel = Math.floor(newXp / 500) + 1;
         await db.user.update({
           where: { id: debate.player1Id },
           data: {
             wins: { increment: isWinner ? 1 : 0 },
             losses: { increment: isWinner ? 0 : 1 },
             elo: { increment: isWinner ? 15 : -10 },
-            xp: { increment: analysisResult.player1Score },
+            xp: newXp,
+            level: newLevel,
           },
         });
       }
 
       if (debate.player2) {
         const isWinner = analysisResult.player2Score > analysisResult.player1Score;
+        const p2 = await db.user.findUnique({ where: { id: debate.player2Id! } });
+        const newXp = (p2?.xp ?? 0) + analysisResult.player2Score;
+        const newLevel = Math.floor(newXp / 500) + 1;
         await db.user.update({
           where: { id: debate.player2Id! },
           data: {
             wins: { increment: isWinner ? 1 : 0 },
             losses: { increment: isWinner ? 0 : 1 },
             elo: { increment: isWinner ? 15 : -10 },
-            xp: { increment: analysisResult.player2Score },
+            xp: newXp,
+            level: newLevel,
           },
         });
       }
@@ -105,4 +129,3 @@ export async function POST(
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
-

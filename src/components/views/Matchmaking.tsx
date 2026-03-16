@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion } from "motion/react";
 import { Loader2, Zap, Sword, Brain } from "lucide-react";
 import { useApp, TrainingDifficulty } from "@/lib/store";
@@ -48,60 +48,127 @@ const DIFFICULTIES: {
 export function Matchmaking() {
   const { state, dispatch } = useApp();
   const [status, setStatus] = useState("Recherche d'un adversaire...");
-  // For training mode: show difficulty selector before starting
   const [difficultySelected, setDifficultySelected] = useState(
     state.gameMode !== "training"
   );
   const [selectedDifficulty, setSelectedDifficulty] = useState<TrainingDifficulty>("medium");
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stopPolling = () => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  };
 
   const handleStartTraining = () => {
     dispatch({ type: "SET_TRAINING_DIFFICULTY", payload: selectedDifficulty });
     setDifficultySelected(true);
   };
 
+  const handleCancel = () => {
+    stopPolling();
+    dispatch({ type: "SET_GAME_MODE", payload: null });
+    dispatch({ type: "SET_TRAINING_DIFFICULTY", payload: null });
+    dispatch({ type: "SET_PLAYER_ROLE", payload: null });
+    dispatch({ type: "SET_VIEW", payload: "dashboard" });
+  };
+
   useEffect(() => {
     if (!difficultySelected) return;
+    if (!state.user || !state.gameMode) return;
 
-    const createDebate = async () => {
+    // Training mode: simple debate creation, navigate immediately
+    if (state.gameMode === "training") {
+      const timers = [
+        setTimeout(() => setStatus("Analyse du niveau Elo..."), 1500),
+        setTimeout(() => setStatus("Sélection du sujet de débat..."), 3000),
+        setTimeout(() => setStatus("Préparation de l'arène..."), 4500),
+        setTimeout(async () => {
+          try {
+            const res = await fetch("/api/debates", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ playerId: state.user!.id, mode: "training" }),
+            });
+            if (!res.ok) throw new Error();
+            const debate = await res.json();
+            dispatch({ type: "SET_DEBATE_ID", payload: debate.id });
+            dispatch({ type: "SET_PLAYER_ROLE", payload: "player1" });
+          } catch {
+            console.error("Failed to create training debate");
+          }
+          dispatch({ type: "SET_VIEW", payload: "debate" });
+        }, 6000),
+      ];
+      return () => timers.forEach(clearTimeout);
+    }
+
+    // Casual / Ranked: try to join an existing debate first, else create one and wait
+    const startMultiplayer = async () => {
       if (!state.user || !state.gameMode) return;
 
       try {
-        const res = await fetch("/api/debates", {
+        setStatus("Recherche d'un adversaire...");
+
+        // Try to find a waiting debate for this mode
+        const listRes = await fetch(`/api/debates?mode=${state.gameMode}&status=waiting`);
+        const debates: { id: string; player1Id: string }[] = await listRes.json();
+        const joinable = debates.find((d) => d.player1Id !== state.user!.id);
+
+        if (joinable) {
+          // Join as player2
+          setStatus("Adversaire trouvé ! Connexion à l'arène...");
+          await fetch(`/api/debates/${joinable.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              player2Id: state.user!.id,
+              status: "active",
+              startedAt: new Date().toISOString(),
+            }),
+          });
+          dispatch({ type: "SET_DEBATE_ID", payload: joinable.id });
+          dispatch({ type: "SET_PLAYER_ROLE", payload: "player2" });
+          dispatch({ type: "SET_VIEW", payload: "debate" });
+          return;
+        }
+
+        // No debate found — create one and wait for opponent
+        setStatus("En attente d'un adversaire...");
+        const createRes = await fetch("/api/debates", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            playerId: state.user.id,
-            mode: state.gameMode,
-          }),
+          body: JSON.stringify({ playerId: state.user!.id, mode: state.gameMode }),
         });
-
-        if (!res.ok) throw new Error("Failed to create debate");
-
-        const debate = await res.json();
+        if (!createRes.ok) throw new Error("Failed to create debate");
+        const debate = await createRes.json();
         dispatch({ type: "SET_DEBATE_ID", payload: debate.id });
+        dispatch({ type: "SET_PLAYER_ROLE", payload: "player1" });
+
+        // Poll until player2 joins
+        pollRef.current = setInterval(async () => {
+          try {
+            const stateRes = await fetch(`/api/debates/${debate.id}`);
+            const updated = await stateRes.json();
+            if (updated.player2Id) {
+              stopPolling();
+              setStatus("Adversaire trouvé ! Connexion à l'arène...");
+              dispatch({ type: "SET_VIEW", payload: "debate" });
+            }
+          } catch {
+            // ignore polling errors
+          }
+        }, 2000);
       } catch (error) {
-        console.error("Failed to create debate:", error);
+        console.error("Matchmaking error:", error);
+        setStatus("Erreur de connexion. Réessayez...");
       }
     };
 
-    const timers = [
-      setTimeout(() => setStatus("Analyse du niveau Elo..."), 1500),
-      setTimeout(() => setStatus("Sélection du sujet de débat..."), 3000),
-      setTimeout(() => setStatus("Préparation de l'arène..."), 4500),
-      setTimeout(() => {
-        createDebate();
-        dispatch({ type: "SET_VIEW", payload: "debate" });
-      }, 6000),
-    ];
-
-    return () => timers.forEach(clearTimeout);
+    startMultiplayer();
+    return () => stopPolling();
   }, [difficultySelected, dispatch, state.gameMode, state.user]);
-
-  const handleCancel = () => {
-    dispatch({ type: "SET_GAME_MODE", payload: null });
-    dispatch({ type: "SET_TRAINING_DIFFICULTY", payload: null });
-    dispatch({ type: "SET_VIEW", payload: "dashboard" });
-  };
 
   const modeLabels = {
     training: "Entraînement",
@@ -218,4 +285,3 @@ export function Matchmaking() {
     </div>
   );
 }
-

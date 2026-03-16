@@ -20,6 +20,7 @@ export interface AppState {
   gameMode: "training" | "casual" | "ranked" | null;
   trainingDifficulty: TrainingDifficulty | null;
   currentDebateId: string | null;
+  playerRole: "player1" | "player2" | null;
   analysisData: AnalysisData | null;
 }
 
@@ -44,6 +45,7 @@ export type AppAction =
   | { type: "SET_GAME_MODE"; payload: AppState["gameMode"] }
   | { type: "SET_TRAINING_DIFFICULTY"; payload: TrainingDifficulty | null }
   | { type: "SET_DEBATE_ID"; payload: string | null }
+  | { type: "SET_PLAYER_ROLE"; payload: "player1" | "player2" | null }
   | { type: "SET_ANALYSIS"; payload: AnalysisData | null }
   | { type: "LOGOUT" };
 
@@ -53,6 +55,7 @@ export const initialState: AppState = {
   gameMode: null,
   trainingDifficulty: null,
   currentDebateId: null,
+  playerRole: null,
   analysisData: null,
 };
 
@@ -68,6 +71,8 @@ export function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, trainingDifficulty: action.payload };
     case "SET_DEBATE_ID":
       return { ...state, currentDebateId: action.payload };
+    case "SET_PLAYER_ROLE":
+      return { ...state, playerRole: action.payload };
     case "SET_ANALYSIS":
       return { ...state, analysisData: action.payload };
     case "LOGOUT":
