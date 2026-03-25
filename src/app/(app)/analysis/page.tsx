@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/lib/store";
+import { useTranslation } from "@/lib/i18n/context";
 import { ScoreCard } from "./components/ScoreCard";
 import { SkillBreakdown } from "./components/SkillBreakdown";
 import { SophismsCard } from "./components/SophismsCard";
@@ -12,12 +13,21 @@ import { AnalysisFooter } from "./components/AnalysisFooter";
 export default function AnalysisPage() {
   const { state, dispatch } = useApp();
   const router = useRouter();
+  const { t } = useTranslation();
   const { analysisData } = state;
+  const [waitedForData, setWaitedForData] = useState(false);
+
+  useEffect(() => {
+    if (!analysisData && !waitedForData) {
+      const timer = setTimeout(() => setWaitedForData(true), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [analysisData, waitedForData]);
 
   useEffect(() => {
     if (!state.user) router.replace("/");
-    else if (!analysisData) router.replace("/dashboard");
-  }, [state.user, analysisData, router]);
+    else if (!analysisData && waitedForData) router.replace("/dashboard");
+  }, [state.user, analysisData, waitedForData, router]);
 
   const handleHome = () => {
     dispatch({ type: "SET_ANALYSIS", payload: null });
@@ -32,20 +42,33 @@ export default function AnalysisPage() {
     router.push("/matchmaking");
   };
 
-  if (!state.user || !analysisData) return null;
+  if (!state.user) return null;
+  if (!analysisData) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <div className="animate-pulse text-slate-400">{t.analysis.title}...</div>
+      </div>
+    );
+  }
 
   const scoreLabel =
-    analysisData.overallScore >= 80 ? "Excellent" :
-    analysisData.overallScore >= 60 ? "Bien" : "À améliorer";
+    analysisData.overallScore >= 80 ? t.analysis.excellent :
+    analysisData.overallScore >= 60 ? t.analysis.good : t.analysis.needsWork;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-8 pb-32 overflow-y-auto">
       <header className="mb-8 text-center">
-        <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">Analyse du Débat</h1>
+        <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">{t.analysis.title}</h1>
         <p className="text-slate-500 dark:text-slate-400">
-          {analysisData.topic || "Voici le rapport détaillé de votre performance."}
+          {analysisData.topic || t.analysis.fallbackSubtitle}
         </p>
       </header>
+
+      {analysisData.error && (
+        <div className="max-w-5xl mx-auto mb-6 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+          {t.analysis.aiUnavailable}
+        </div>
+      )}
 
       <main className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
         <ScoreCard score={analysisData.overallScore} scoreLabel={scoreLabel} />

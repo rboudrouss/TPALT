@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import type { AchievementResult } from "@/lib/achievements";
+import type { Locale, Translations } from "@/lib/i18n/types";
+import { fmt, useTranslation } from "@/lib/i18n/context";
 
 export interface DebateRecord {
   id: string;
@@ -33,14 +35,14 @@ export interface UserProfile {
   debates: DebateRecord[];
 }
 
-export function formatRelativeDate(dateStr: string): string {
+export function formatRelativeDate(dateStr: string, t: Translations): string {
   const date = new Date(dateStr);
   const diffDays = Math.floor((Date.now() - date.getTime()) / 86400000);
-  if (diffDays === 0) return "Aujourd'hui";
-  if (diffDays === 1) return "Hier";
-  if (diffDays < 7) return `Il y a ${diffDays} jours`;
-  if (diffDays < 30) return `Il y a ${Math.floor(diffDays / 7)} semaine(s)`;
-  return date.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" });
+  if (diffDays === 0) return t.common.dates.today;
+  if (diffDays === 1) return t.common.dates.yesterday;
+  if (diffDays < 7) return fmt(t.common.dates.daysAgo, { count: diffDays });
+  if (diffDays < 30) return fmt(t.common.dates.weeksAgo, { count: Math.floor(diffDays / 7) });
+  return date.toLocaleDateString(t.dateLocale, { day: "numeric", month: "short", year: "numeric" });
 }
 
 export function computeCurrentStreak(debates: DebateRecord[], userId: string): number {
@@ -91,6 +93,7 @@ interface UseProfileReturn {
 }
 
 export function useProfile(userId: string | undefined): UseProfileReturn {
+  const { locale } = useTranslation();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [achievementCategories, setAchievementCategories] = useState<
@@ -113,14 +116,14 @@ export function useProfile(userId: string | undefined): UseProfileReturn {
   useEffect(() => {
     if (!userId || loading) return;
     setAchievementsLoading(true);
-    fetch(`/api/users/${userId}/achievements`, { method: "POST" })
+    fetch(`/api/users/${userId}/achievements?locale=${locale}`, { method: "POST" })
       .then((res) => res.json())
       .then((data: { categories: { category: string; items: AchievementResult[] }[] }) => {
         setAchievementCategories(data.categories ?? []);
         setAchievementsLoading(false);
       })
       .catch(() => setAchievementsLoading(false));
-  }, [userId, loading]);
+  }, [userId, loading, locale]);
 
   return { profile, loading, achievementCategories, achievementsLoading };
 }

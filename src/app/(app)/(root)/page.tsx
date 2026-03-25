@@ -6,6 +6,7 @@ import type { User } from "@/lib/store";
 import { HeroSection } from "./components/HeroSection";
 import { LoginForm } from "./components/LoginForm";
 import { FeatureList } from "./components/FeatureList";
+import { LanguageToggle } from "@/components/ui/LanguageToggle";
 
 export default function Home() {
   const { state, dispatch } = useApp();
@@ -30,6 +31,9 @@ export default function Home() {
         style={{ backgroundImage: "url('https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=1920')" }}
       />
       <div className="absolute inset-0 z-10 bg-gradient-to-t from-black via-black/80 to-transparent" />
+      <div className="absolute top-4 right-4 z-30">
+        <LanguageToggle className="border-white/20" />
+      </div>
       <div className="relative z-20 container mx-auto px-4 text-center">
         {!showLogin ? (
           <HeroSection onEnter={() => setShowLogin(true)} />

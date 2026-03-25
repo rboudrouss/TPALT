@@ -1,0 +1,170 @@
+export type Locale = "fr" | "en";
+
+export interface Translations {
+  dateLocale: string;
+  common: {
+    loading: string;
+    cancel: string;
+    back: string;
+    play: string;
+    you: string;
+    for: string;
+    against: string;
+    victory: string;
+    defeat: string;
+    draw: string;
+    wins: string;
+    losses: string;
+    level: string;
+    modeLabels: { training: string; casual: string; ranked: string };
+    difficultyLabels: { easy: string; medium: string; hard: string };
+    dates: {
+      today: string;
+      yesterday: string;
+      daysAgo: string;
+      weeksAgo: string;
+    };
+  };
+  landing: {
+    title: string;
+    tagline: string;
+    enterArena: string;
+    chooseName: string;
+    placeholder: string;
+    start: string;
+    connecting: string;
+    nameMinLength: string;
+    connectionError: string;
+    features: {
+      ai: { title: string; desc: string };
+      matchmaking: { title: string; desc: string };
+      topics: { title: string; desc: string };
+    };
+  };
+  dashboard: {
+    greeting: string;
+    leaderboard: string;
+    profile: string;
+    logout: string;
+    chooseMode: string;
+    statistics: string;
+    eloLevel: string;
+    winRate: string;
+    gameModes: {
+      training: { title: string; desc: string };
+      casual: { title: string; desc: string };
+      ranked: { title: string; desc: string };
+    };
+  };
+  matchmaking: {
+    trainingMode: string;
+    chooseDifficulty: string;
+    difficultyDescs: { easy: string; medium: string; hard: string };
+    selected: string;
+    startTraining: string;
+    searching: string;
+    mode: string;
+    difficulty: string;
+    statusSearching: string;
+    statusAnalyzing: string;
+    statusSelecting: string;
+    statusPreparing: string;
+    statusFound: string;
+    statusWaiting: string;
+    statusError: string;
+  };
+  debate: {
+    info: string;
+    topic: string;
+    position: string;
+    timeRemaining: string;
+    turn: string;
+    aiDifficulty: string;
+    opponent: string;
+    yourTurn: string;
+    opponentTurn: string;
+    endDebate: string;
+    connectingDebate: string;
+    connectingArena: string;
+    defaultOpponent: string;
+    fallbackResponse: string;
+    fallbackError: string;
+    yourArgument: string;
+    waitYourTurn: string;
+    cheatWarning: string;
+    rankedMode: string;
+    infraction: string;
+    penaltyApplied: string;
+    aiAssistant: string;
+    hint: string;
+    hintLoading: string;
+    lastMoveAnalysis: string;
+    analyzingArgument: string;
+    sendToAnalyze: string;
+    quality: string;
+    scoreDelta: string;
+    detectedEvents: string;
+    eventTypes: {
+      claim: string;
+      evidence: string;
+      nuance: string;
+      counter_argument: string;
+      sophism: string;
+      ad_hominem: string;
+      irrelevance: string;
+      repetition: string;
+      wrong_side: string;
+    };
+    fallbackStrengths: string;
+    fallbackWeaknesses: string;
+  };
+  analysis: {
+    title: string;
+    fallbackSubtitle: string;
+    overallScore: string;
+    excellent: string;
+    good: string;
+    needsWork: string;
+    evaluationCriteria: string;
+    argumentQuality: string;
+    rhetoricStyle: string;
+    logicalCoherence: string;
+    factChecking: string;
+    sophismsDetected: string;
+    noSophisms: string;
+    strengths: string;
+    home: string;
+    newMatch: string;
+    unavailable: string;
+    aiUnavailable: string;
+  };
+  profile: {
+    back: string;
+    since: string;
+    tabs: { overview: string; history: string; achievements: string };
+    debates: string;
+    winPercentage: string;
+    lossCount: string;
+    avgScore: string;
+    basedOnAnalyses: string;
+    noAnalysis: string;
+    currentStreak: string;
+    record: string;
+    debateHistory: string;
+    noDebates: string;
+    achievementsUnlocked: string;
+    loadingAchievements: string;
+    unlocked: string;
+  };
+  leaderboard: {
+    title: string;
+    topPlayers: string;
+    noPlayers: string;
+  };
+  replay: {
+    notFound: string;
+    backToProfile: string;
+    transcript: string;
+    noMessages: string;
+  };
+}

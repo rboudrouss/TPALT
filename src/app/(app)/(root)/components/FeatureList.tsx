@@ -1,6 +1,7 @@
 "use client";
 import { motion } from "motion/react";
 import { Gavel, Sparkles, Users } from "lucide-react";
+import { useTranslation } from "@/lib/i18n/context";
 
 function Feature({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) {
   return (
@@ -13,6 +14,8 @@ function Feature({ icon, title, desc }: { icon: React.ReactNode; title: string; 
 }
 
 export function FeatureList() {
+  const { t } = useTranslation();
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -22,18 +25,18 @@ export function FeatureList() {
     >
       <Feature
         icon={<Sparkles className="w-6 h-6 text-amber-400" />}
-        title="Analyse IA"
-        desc="Sophismes, biais cognitifs et qualité argumentative analysés en temps réel."
+        title={t.landing.features.ai.title}
+        desc={t.landing.features.ai.desc}
       />
       <Feature
         icon={<Users className="w-6 h-6 text-amber-400" />}
-        title="Matchmaking Élo"
-        desc="Affrontez des adversaires de votre niveau et grimpez les échelons."
+        title={t.landing.features.matchmaking.title}
+        desc={t.landing.features.matchmaking.desc}
       />
       <Feature
         icon={<Gavel className="w-6 h-6 text-amber-400" />}
-        title="Sujets Variés"
-        desc="Politique, philosophie, société... Des thèmes pour tous les goûts."
+        title={t.landing.features.topics.title}
+        desc={t.landing.features.topics.desc}
       />
     </motion.div>
   );

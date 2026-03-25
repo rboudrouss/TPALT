@@ -2,18 +2,21 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle } from "lucide-react";
+import { useTranslation } from "@/lib/i18n/context";
 
 interface StrengthsCardProps {
   strengths: string[];
 }
 
 export function StrengthsCard({ strengths }: StrengthsCardProps) {
+  const { t } = useTranslation();
+
   return (
     <Card className="border-emerald-100 bg-emerald-50/50 dark:bg-emerald-900/10 dark:border-emerald-900/30">
       <CardHeader>
         <CardTitle className="text-emerald-700 dark:text-emerald-400 flex items-center gap-2 text-lg">
           <CheckCircle className="w-5 h-5" />
-          Points Forts
+          {t.analysis.strengths}
         </CardTitle>
       </CardHeader>
       <CardContent>

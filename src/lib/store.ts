@@ -36,6 +36,7 @@ export interface AnalysisData {
   player1Score?: number;
   player2Score?: number;
   topic?: string;
+  error?: boolean;
 }
 
 export type AppAction =

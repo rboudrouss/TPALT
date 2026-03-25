@@ -2,6 +2,7 @@
 
 import { motion } from "motion/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useTranslation } from "@/lib/i18n/context";
 
 interface ScoreCardProps {
   score: number;
@@ -9,6 +10,8 @@ interface ScoreCardProps {
 }
 
 export function ScoreCard({ score, scoreLabel }: ScoreCardProps) {
+  const { t } = useTranslation();
+
   return (
     <motion.div
       initial={{ scale: 0.9, opacity: 0 }}
@@ -18,7 +21,7 @@ export function ScoreCard({ score, scoreLabel }: ScoreCardProps) {
     >
       <Card className="h-full bg-indigo-600 text-white border-none shadow-xl">
         <CardHeader>
-          <CardTitle className="text-indigo-100">Score Global</CardTitle>
+          <CardTitle className="text-indigo-100">{t.analysis.overallScore}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col items-center justify-center h-64">
           <div className="text-8xl font-bold tracking-tighter">{score}</div>

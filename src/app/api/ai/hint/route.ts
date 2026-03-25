@@ -3,7 +3,7 @@ import { getAIHint } from "@/lib/groq";
 
 export async function POST(request: NextRequest) {
   try {
-    const { topic, position, messages } = await request.json();
+    const { topic, position, messages, locale = "fr" } = await request.json();
 
     if (!topic || !position) {
       return NextResponse.json(
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const hint = await getAIHint(topic, position, messages || []);
+    const hint = await getAIHint(topic, position, messages || [], locale);
 
     return NextResponse.json({ hint });
   } catch (error) {

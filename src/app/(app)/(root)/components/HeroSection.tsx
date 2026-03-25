@@ -2,12 +2,15 @@
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Gavel } from "lucide-react";
+import { useTranslation } from "@/lib/i18n/context";
 
 interface HeroSectionProps {
   onEnter: () => void;
 }
 
 export function HeroSection({ onEnter }: HeroSectionProps) {
+  const { t } = useTranslation();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -20,9 +23,9 @@ export function HeroSection({ onEnter }: HeroSectionProps) {
           <Gavel className="w-12 h-12 text-amber-500" />
         </div>
       </div>
-      <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 tracking-tight">RHETORICA</h1>
+      <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 tracking-tight">{t.landing.title}</h1>
       <p className="text-xl md:text-2xl text-gray-300 max-w-2xl mx-auto font-light leading-relaxed">
-        Maîtrisez l'art du débat. Affrontez des esprits affûtés, recevez une analyse IA de vos arguments et progressez vers l'excellence oratoire.
+        {t.landing.tagline}
       </p>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -35,7 +38,7 @@ export function HeroSection({ onEnter }: HeroSectionProps) {
           onClick={onEnter}
           className="bg-amber-600 hover:bg-amber-700 text-white px-8 py-6 text-lg rounded-full font-semibold shadow-lg shadow-amber-900/20 group"
         >
-          Entrer dans l'arène
+          {t.landing.enterArena}
           <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
         </Button>
       </motion.div>

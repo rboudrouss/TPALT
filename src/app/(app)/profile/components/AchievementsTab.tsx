@@ -4,12 +4,15 @@ import { Progress } from "@/components/ui/progress";
 import { CheckCircle2 } from "lucide-react";
 import type { AchievementResult } from "@/lib/achievements";
 import { formatRelativeDate } from "../hooks/useProfile";
+import { useTranslation } from "@/lib/i18n/context";
 
 interface AchievementCardProps {
   achievement: AchievementResult;
 }
 
 function AchievementCard({ achievement: b }: AchievementCardProps) {
+  const { t } = useTranslation();
+
   return (
     <motion.div
       whileHover={{ scale: 1.02 }}
@@ -35,7 +38,7 @@ function AchievementCard({ achievement: b }: AchievementCardProps) {
       </div>
       {b.unlocked ? (
         <p className="text-xs text-amber-600 dark:text-amber-400 font-medium mt-auto">
-          {b.unlockedAt ? formatRelativeDate(b.unlockedAt) : "Débloqué"}
+          {b.unlockedAt ? formatRelativeDate(b.unlockedAt, t) : t.profile.unlocked}
         </p>
       ) : (
         <div className="mt-auto">
@@ -56,6 +59,7 @@ export default function AchievementsTab({
   achievementCategories,
   achievementsLoading,
 }: AchievementsTabProps) {
+  const { t } = useTranslation();
   const totalAchievements = achievementCategories.reduce(
     (n, c) => n + c.items.length,
     0
@@ -69,7 +73,7 @@ export default function AchievementsTab({
     <div className="space-y-8">
       <div className="flex items-center justify-between bg-white dark:bg-slate-900 rounded-xl px-6 py-4 shadow-md border border-slate-200 dark:border-slate-800">
         <div>
-          <p className="text-sm text-slate-500">Succès débloqués</p>
+          <p className="text-sm text-slate-500">{t.profile.achievementsUnlocked}</p>
           <p className="text-2xl font-bold text-slate-900 dark:text-white">
             {unlockedCount}{" "}
             <span className="text-slate-400 font-normal text-lg">
@@ -96,7 +100,7 @@ export default function AchievementsTab({
       </div>
 
       {achievementsLoading ? (
-        <p className="text-center text-slate-500 py-8">Chargement des succès...</p>
+        <p className="text-center text-slate-500 py-8">{t.profile.loadingAchievements}</p>
       ) : (
         achievementCategories.map(({ category, items }) => (
           <div key={category}>

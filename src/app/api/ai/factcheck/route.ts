@@ -3,13 +3,13 @@ import { factCheck } from "@/lib/groq";
 
 export async function POST(request: NextRequest) {
   try {
-    const { claim } = await request.json();
+    const { claim, locale = "fr" } = await request.json();
 
     if (!claim) {
       return NextResponse.json({ error: "claim is required" }, { status: 400 });
     }
 
-    const result = await factCheck(claim);
+    const result = await factCheck(claim, locale);
 
     return NextResponse.json({ result });
   } catch (error) {

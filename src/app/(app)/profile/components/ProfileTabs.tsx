@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslation } from "@/lib/i18n/context";
+
 type Tab = "overview" | "history" | "achievements";
 
 interface ProfileTabsProps {
@@ -7,13 +9,9 @@ interface ProfileTabsProps {
   onTabChange: (tab: Tab) => void;
 }
 
-const tabLabels: Record<Tab, string> = {
-  overview: "Aperçu",
-  history: "Historique",
-  achievements: "Succès",
-};
-
 export default function ProfileTabs({ activeTab, onTabChange }: ProfileTabsProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex gap-2 mb-8 bg-white dark:bg-slate-900 rounded-lg p-1 shadow-lg max-w-md mx-auto">
       {(["overview", "history", "achievements"] as const).map((tab) => (
@@ -26,7 +24,7 @@ export default function ProfileTabs({ activeTab, onTabChange }: ProfileTabsProps
               : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
           }`}
         >
-          {tabLabels[tab]}
+          {t.profile.tabs[tab]}
         </button>
       ))}
     </div>
