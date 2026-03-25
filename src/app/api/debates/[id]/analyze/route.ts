@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { analyzeDebate } from "@/lib/groq";
+import { CASUAL_ELO_WIN, CASUAL_ELO_LOSS } from "@/lib/elo";
 
 export async function POST(
   request: NextRequest,
@@ -96,7 +97,7 @@ export async function POST(
           data: {
             wins: { increment: isWinner ? 1 : 0 },
             losses: { increment: isWinner ? 0 : 1 },
-            elo: { increment: isWinner ? 15 : -10 },
+            elo: { increment: isWinner ? CASUAL_ELO_WIN : CASUAL_ELO_LOSS },
             xp: newXp,
             level: newLevel,
           },
@@ -113,7 +114,7 @@ export async function POST(
           data: {
             wins: { increment: isWinner ? 1 : 0 },
             losses: { increment: isWinner ? 0 : 1 },
-            elo: { increment: isWinner ? 15 : -10 },
+            elo: { increment: isWinner ? CASUAL_ELO_WIN : CASUAL_ELO_LOSS },
             xp: newXp,
             level: newLevel,
           },
