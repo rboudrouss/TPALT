@@ -1,15 +1,11 @@
 "use client";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, XCircle, Clock } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, ChevronRight } from "lucide-react";
 import type { DebateRecord } from "../hooks/useProfile";
 import { formatRelativeDate } from "../hooks/useProfile";
-
-const modeLabels: Record<string, string> = {
-  training: "Training",
-  casual: "Casual",
-  ranked: "Classé",
-};
+import { useTranslation } from "@/lib/i18n/context";
 
 interface DebateHistoryItemProps {
   debate: DebateRecord;
@@ -17,6 +13,8 @@ interface DebateHistoryItemProps {
 }
 
 function DebateHistoryItem({ debate: d, userId }: DebateHistoryItemProps) {
+  const router = useRouter();
+  const { t } = useTranslation();
   const isPlayer1 = d.player1Id === userId;
   const opponent = isPlayer1 ? d.player2 : d.player1;
   const opponentName = opponent?.username ?? "IA_Coach";
@@ -25,7 +23,10 @@ function DebateHistoryItem({ debate: d, userId }: DebateHistoryItemProps) {
     d.winnerId === userId ? "win" : d.winnerId ? "loss" : "draw";
 
   return (
-    <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
+    <div
+      className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800 rounded-lg cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors"
+      onClick={() => router.push(`/replay/${d.id}`)}
+    >
       <div className="flex items-center gap-4">
         <div
           className={`p-2 rounded-lg ${
@@ -48,17 +49,20 @@ function DebateHistoryItem({ debate: d, userId }: DebateHistoryItemProps) {
           <h4 className="font-semibold text-slate-900 dark:text-white">{d.topic}</h4>
           <div className="text-sm text-slate-500 flex items-center gap-2">
             vs {opponentName}{" "}
-            <Badge variant="outline">{modeLabels[d.mode] ?? d.mode}</Badge>
-            <Clock className="w-3 h-3" /> {formatRelativeDate(d.createdAt)}
+            <Badge variant="outline">{t.common.modeLabels[d.mode as keyof typeof t.common.modeLabels] ?? d.mode}</Badge>
+            <Clock className="w-3 h-3" /> {formatRelativeDate(d.createdAt, t)}
           </div>
         </div>
       </div>
-      <div className="text-right">
-        {userScore != null ? (
-          <div className="font-bold">{userScore}/100</div>
-        ) : (
-          <div className="text-slate-400 text-sm">N/A</div>
-        )}
+      <div className="flex items-center gap-3">
+        <div className="text-right">
+          {userScore != null ? (
+            <div className="font-bold">{userScore}/100</div>
+          ) : (
+            <div className="text-slate-400 text-sm">N/A</div>
+          )}
+        </div>
+        <ChevronRight className="w-4 h-4 text-slate-400" />
       </div>
     </div>
   );
@@ -71,16 +75,18 @@ interface HistoryTabProps {
 }
 
 export default function HistoryTab({ debates, userId, loading }: HistoryTabProps) {
+  const { t } = useTranslation();
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Historique des débats</CardTitle>
+        <CardTitle>{t.profile.debateHistory}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         {loading ? (
-          <p className="text-center text-slate-500 py-8">Chargement...</p>
+          <p className="text-center text-slate-500 py-8">{t.common.loading}</p>
         ) : debates.length === 0 ? (
-          <p className="text-center text-slate-500 py-8">Aucun débat pour l'instant.</p>
+          <p className="text-center text-slate-500 py-8">{t.profile.noDebates}</p>
         ) : (
           debates.map((d) => (
             <DebateHistoryItem key={d.id} debate={d} userId={userId} />

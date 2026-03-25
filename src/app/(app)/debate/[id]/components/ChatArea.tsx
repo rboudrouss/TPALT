@@ -6,6 +6,7 @@ import { Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
 import { MAX_PLAYER_CHARS } from "@/lib/prompts";
+import { useTranslation } from "@/lib/i18n/context";
 
 interface Message {
   id: string;
@@ -33,6 +34,8 @@ export function ChatArea({
   onInputChange,
   onSend,
 }: ChatAreaProps) {
+  const { t } = useTranslation();
+
   return (
     <>
       <div
@@ -90,7 +93,7 @@ export function ChatArea({
           <textarea
             className="w-full p-4 pr-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none text-slate-900 dark:text-white"
             rows={3}
-            placeholder={isMyTurn ? "Votre argument..." : "Attendez votre tour..."}
+            placeholder={isMyTurn ? t.debate.yourArgument : t.debate.waitYourTurn}
             value={inputText}
             onChange={(e) => onInputChange(e.target.value.slice(0, MAX_PLAYER_CHARS))}
             disabled={!isMyTurn}

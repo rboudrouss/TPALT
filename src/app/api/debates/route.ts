@@ -5,7 +5,7 @@ import { getRandomTopic } from "@/lib/topics";
 // Create a new debate
 export async function POST(request: NextRequest) {
   try {
-    const { playerId, mode } = await request.json();
+    const { playerId, mode, locale } = await request.json();
 
     if (!playerId || !mode) {
       return NextResponse.json(
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const topic = getRandomTopic();
+    const topic = getRandomTopic(locale ?? "fr");
     const positions = ["POUR", "CONTRE"];
     const player1Position = positions[Math.floor(Math.random() * 2)];
 

@@ -8,6 +8,8 @@ import { useAntiCheat } from "./hooks/useAntiCheat";
 import { useWebSocket } from "./hooks/useWebSocket";
 import { useAIAssistant } from "./hooks/useAIAssistant";
 import { Message, ROUND_TIME } from "./hooks/types";
+import { useToasts } from "@/components/providers/ToastProvider";
+import { useTranslation } from "@/lib/i18n/context";
 import { DebateInfoSidebar } from "./components/DebateInfoSidebar";
 import { CheatWarning } from "./components/CheatWarning";
 import { ChatArea } from "./components/ChatArea";
@@ -16,7 +18,9 @@ import { RightSidebar } from "./components/RightSidebar";
 export default function DebatePage() {
   const { state, dispatch } = useApp();
   const router = useRouter();
+  const { t, locale } = useTranslation();
   const { gameMode, trainingDifficulty, currentDebateId, playerRole, user } = state;
+  const { checkAchievements } = useToasts();
   const isMultiplayer = gameMode === "casual" || gameMode === "ranked";
 
   useEffect(() => {
@@ -24,11 +28,11 @@ export default function DebatePage() {
   }, [user, router]);
 
   // ── Core debate state ──────────────────────────────────────────────────────
-  const [topic, setTopic] = useState(getRandomTopic);
+  const [topic, setTopic] = useState(() => getRandomTopic(locale));
   const [position, setPosition] = useState<"POUR" | "CONTRE">("POUR");
-  const [opponentName, setOpponentName] = useState("Adversaire");
+  const [opponentName, setOpponentName] = useState(t.debate.defaultOpponent);
   const [messages, setMessages] = useState<Message[]>([
-    { id: "0", sender: "system", content: "Connexion au débat...", timestamp: new Date() },
+    { id: "0", sender: "system", content: t.debate.connectingDebate, timestamp: new Date() },
   ]);
   const [inputText, setInputText] = useState("");
   const [timeLeft, setTimeLeft] = useState(ROUND_TIME);
@@ -93,12 +97,13 @@ export default function DebatePage() {
           userPosition: position,
           conversationHistory: history,
           difficulty: trainingDifficulty ?? "medium",
+          locale,
         }),
       });
       const data = await res.json();
-      addMessage("opponent", data.reply || "Je maintiens ma position.");
+      addMessage("opponent", data.reply || t.debate.fallbackResponse);
     } catch {
-      addMessage("opponent", "Je maintiens ma position. Votre argument ne me convainc pas.");
+      addMessage("opponent", t.debate.fallbackError);
     } finally {
       setIsOpponentTyping(false);
       setIsMyTurn(true);
@@ -193,8 +198,8 @@ export default function DebatePage() {
       factChecking: 70,
       sophisms: [{ name: "Ad Hominem", count: 1, context: "Tour 3" }],
       biases: [],
-      strengths: ["Bonne structure argumentative"],
-      weaknesses: ["Manque de sources"],
+      strengths: [t.debate.fallbackStrengths],
+      weaknesses: [t.debate.fallbackWeaknesses],
       topic,
     };
 
@@ -203,20 +208,23 @@ export default function DebatePage() {
         const res = await fetch(`/api/debates/${currentDebateId}/analyze`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: analysisMessages, cheatCount }),
+          body: JSON.stringify({ messages: analysisMessages, cheatCount, locale }),
         });
         if (!res.ok) throw new Error(`Analyze failed: ${res.status}`);
         const analysis = await res.json();
-        dispatch({ type: "SET_ANALYSIS", payload: { ...analysis, topic } });
-      } catch {
-        dispatch({ type: "SET_ANALYSIS", payload: fallbackAnalysis });
+        const error = analysis.aiGenerated === false;
+        dispatch({ type: "SET_ANALYSIS", payload: { ...analysis, topic, error } });
+      } catch (err) {
+        console.error("[handleEndDebate] Analysis API failed:", err);
+        dispatch({ type: "SET_ANALYSIS", payload: { ...fallbackAnalysis, error: true } });
       }
     } else {
-      dispatch({ type: "SET_ANALYSIS", payload: fallbackAnalysis });
+      dispatch({ type: "SET_ANALYSIS", payload: { ...fallbackAnalysis, error: true } });
     }
 
+    if (user) checkAchievements(user.id);
     router.push("/analysis");
-  }, [currentDebateId, cheatCount, topic, user, opponentName, dispatch, router]);
+  }, [currentDebateId, cheatCount, topic, user, opponentName, dispatch, router, checkAchievements]);
 
   useEffect(() => {
     handleEndDebateRef.current = handleEndDebate;
@@ -234,7 +242,7 @@ export default function DebatePage() {
   if (!debateReady) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-950 text-white">
-        <div className="animate-pulse text-slate-400">Connexion à l&apos;arène...</div>
+        <div className="animate-pulse text-slate-400">{t.debate.connectingArena}</div>
       </div>
     );
   }

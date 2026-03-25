@@ -1,6 +1,7 @@
 "use client";
 import { Card, CardContent } from "@/components/ui/card";
 import { BarChart3, Target, Brain, Flame } from "lucide-react";
+import { useTranslation, fmt } from "@/lib/i18n/context";
 
 interface StatCardProps {
   icon: React.ReactNode;
@@ -45,31 +46,33 @@ export default function OverviewTab({
   currentStreak,
   maxStreak,
 }: OverviewTabProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
       <StatCard
         icon={<BarChart3 className="w-6 h-6 text-blue-500" />}
-        label="Débats"
+        label={t.profile.debates}
         value={debateCount}
-        trend={`${winRate}% de victoires`}
+        trend={fmt(t.profile.winPercentage, { rate: winRate })}
       />
       <StatCard
         icon={<Target className="w-6 h-6 text-green-500" />}
-        label="Victoires"
+        label={t.common.wins}
         value={wins}
-        trend={`${losses} défaites`}
+        trend={fmt(t.profile.lossCount, { count: losses })}
       />
       <StatCard
         icon={<Brain className="w-6 h-6 text-purple-500" />}
-        label="Score moyen"
+        label={t.profile.avgScore}
         value={avgScore}
-        trend={avgScore !== "N/A" ? "Basé sur vos analyses" : "Pas encore d'analyse"}
+        trend={avgScore !== "N/A" ? t.profile.basedOnAnalyses : t.profile.noAnalysis}
       />
       <StatCard
         icon={<Flame className="w-6 h-6 text-orange-500" />}
-        label="Série actuelle"
+        label={t.profile.currentStreak}
         value={currentStreak}
-        trend={`Record: ${maxStreak}`}
+        trend={fmt(t.profile.record, { count: maxStreak })}
       />
     </div>
   );

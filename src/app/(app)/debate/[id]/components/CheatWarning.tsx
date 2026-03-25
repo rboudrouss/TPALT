@@ -2,6 +2,7 @@
 
 import { ShieldAlert } from "lucide-react";
 import { motion } from "motion/react";
+import { useTranslation, fmt } from "@/lib/i18n/context";
 
 interface CheatWarningProps {
   show: boolean;
@@ -9,6 +10,8 @@ interface CheatWarningProps {
 }
 
 export function CheatWarning({ show, cheatCount }: CheatWarningProps) {
+  const { t } = useTranslation();
+
   if (!show) return null;
 
   return (
@@ -18,7 +21,7 @@ export function CheatWarning({ show, cheatCount }: CheatWarningProps) {
       className="absolute top-4 left-0 right-0 mx-auto w-max z-50 bg-red-600 text-white px-6 py-3 rounded-full flex items-center shadow-lg"
     >
       <ShieldAlert className="mr-2" />
-      Attention : Focus perdu ! ({cheatCount})
+      {fmt(t.debate.cheatWarning, { count: cheatCount })}
     </motion.div>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/lib/store";
+import { useTranslation } from "@/lib/i18n/context";
 
 export function useMatchmaking(difficultySelected: boolean): {
   status: string;
@@ -10,7 +11,8 @@ export function useMatchmaking(difficultySelected: boolean): {
 } {
   const { state, dispatch } = useApp();
   const router = useRouter();
-  const [status, setStatus] = useState("Recherche d'un adversaire...");
+  const { t, locale } = useTranslation();
+  const [status, setStatus] = useState(t.matchmaking.statusSearching);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const stopPolling = () => {
@@ -34,15 +36,15 @@ export function useMatchmaking(difficultySelected: boolean): {
 
     if (state.gameMode === "training") {
       const timers = [
-        setTimeout(() => setStatus("Analyse du niveau Elo..."), 1500),
-        setTimeout(() => setStatus("Sélection du sujet de débat..."), 3000),
-        setTimeout(() => setStatus("Préparation de l'arène..."), 4500),
+        setTimeout(() => setStatus(t.matchmaking.statusAnalyzing), 1500),
+        setTimeout(() => setStatus(t.matchmaking.statusSelecting), 3000),
+        setTimeout(() => setStatus(t.matchmaking.statusPreparing), 4500),
         setTimeout(async () => {
           try {
             const res = await fetch("/api/debates", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ playerId: state.user!.id, mode: "training" }),
+              body: JSON.stringify({ playerId: state.user!.id, mode: "training", locale }),
             });
             if (!res.ok) throw new Error();
             const debate = await res.json();
@@ -61,14 +63,14 @@ export function useMatchmaking(difficultySelected: boolean): {
       if (!state.user || !state.gameMode) return;
 
       try {
-        setStatus("Recherche d'un adversaire...");
+        setStatus(t.matchmaking.statusSearching);
 
         const listRes = await fetch(`/api/debates?mode=${state.gameMode}&status=waiting`);
         const debates: { id: string; player1Id: string }[] = await listRes.json();
         const joinable = debates.find((d) => d.player1Id !== state.user!.id);
 
         if (joinable) {
-          setStatus("Adversaire trouvé ! Connexion à l'arène...");
+          setStatus(t.matchmaking.statusFound);
           await fetch(`/api/debates/${joinable.id}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
@@ -84,11 +86,11 @@ export function useMatchmaking(difficultySelected: boolean): {
           return;
         }
 
-        setStatus("En attente d'un adversaire...");
+        setStatus(t.matchmaking.statusWaiting);
         const createRes = await fetch("/api/debates", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ playerId: state.user!.id, mode: state.gameMode }),
+          body: JSON.stringify({ playerId: state.user!.id, mode: state.gameMode, locale }),
         });
         if (!createRes.ok) throw new Error("Failed to create debate");
         const debate = await createRes.json();
@@ -101,7 +103,7 @@ export function useMatchmaking(difficultySelected: boolean): {
             const updated = await stateRes.json();
             if (updated.player2Id) {
               stopPolling();
-              setStatus("Adversaire trouvé ! Connexion à l'arène...");
+              setStatus(t.matchmaking.statusFound);
               router.push(`/debate/${debate.id}`);
             }
           } catch {
@@ -110,12 +112,13 @@ export function useMatchmaking(difficultySelected: boolean): {
         }, 500);
       } catch (error) {
         console.error("Matchmaking error:", error);
-        setStatus("Erreur de connexion. Réessayez...");
+        setStatus(t.matchmaking.statusError);
       }
     };
 
     startMultiplayer();
     return () => stopPolling();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [difficultySelected, dispatch, state.gameMode, state.user, router]);
 
   return { status, handleCancel };

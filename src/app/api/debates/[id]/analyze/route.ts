@@ -9,9 +9,10 @@ export async function POST(
   try {
     const { id: debateId } = await params;
     const body = await request.json().catch(() => ({}));
-    const { messages: bodyMessages, cheatCount = 0 } = body as {
+    const { messages: bodyMessages, cheatCount = 0, locale = "fr" } = body as {
       messages?: { sender: string; content: string }[];
       cheatCount?: number;
+      locale?: "fr" | "en";
     };
 
     const debate = await db.debate.findUnique({
@@ -40,7 +41,7 @@ export async function POST(
             content: m.content,
           }));
 
-    const rawAnalysis = await analyzeDebate(debate.topic, formattedMessages);
+    const { analysis: rawAnalysis, aiGenerated } = await analyzeDebate(debate.topic, formattedMessages, locale);
 
     // Apply anti-cheat penalty in ranked mode
     const player1Score =
@@ -126,6 +127,7 @@ export async function POST(
       biases: analysisResult.biases,
       strengths: analysisResult.strengths,
       weaknesses: analysisResult.weaknesses,
+      aiGenerated,
     });
   } catch (error) {
     console.error("Analyze debate error:", error);

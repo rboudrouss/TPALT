@@ -3,6 +3,7 @@
 import { motion } from "motion/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3 } from "lucide-react";
+import { useTranslation } from "@/lib/i18n/context";
 
 interface SkillBreakdownProps {
   argumentQuality: number;
@@ -31,19 +32,21 @@ function SkillBar({ label, percentage, color }: { label: string; percentage: num
 }
 
 export function SkillBreakdown({ argumentQuality, rhetoricStyle, logicalCoherence, factChecking }: SkillBreakdownProps) {
+  const { t } = useTranslation();
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <BarChart3 className="w-5 h-5 text-indigo-500" />
-          Critères d&apos;évaluation
+          {t.analysis.evaluationCriteria}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <SkillBar label="Qualité Argumentative" percentage={argumentQuality} color="bg-emerald-500" />
-        <SkillBar label="Rhétorique & Style" percentage={rhetoricStyle} color="bg-blue-500" />
-        <SkillBar label="Cohérence Logique" percentage={logicalCoherence} color="bg-violet-500" />
-        <SkillBar label="Fact-Checking" percentage={factChecking} color="bg-amber-500" />
+        <SkillBar label={t.analysis.argumentQuality} percentage={argumentQuality} color="bg-emerald-500" />
+        <SkillBar label={t.analysis.rhetoricStyle} percentage={rhetoricStyle} color="bg-blue-500" />
+        <SkillBar label={t.analysis.logicalCoherence} percentage={logicalCoherence} color="bg-violet-500" />
+        <SkillBar label={t.analysis.factChecking} percentage={factChecking} color="bg-amber-500" />
       </CardContent>
     </Card>
   );

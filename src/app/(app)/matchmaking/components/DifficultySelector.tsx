@@ -6,11 +6,10 @@ import { Zap, Sword, Brain } from "lucide-react";
 import { TrainingDifficulty } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useTranslation } from "@/lib/i18n/context";
 
-const DIFFICULTIES: {
+const DIFFICULTY_META: {
   value: TrainingDifficulty;
-  label: string;
-  description: string;
   icon: React.ReactNode;
   color: string;
   border: string;
@@ -18,8 +17,6 @@ const DIFFICULTIES: {
 }[] = [
   {
     value: "easy",
-    label: "Débutant",
-    description: "L'IA commet des erreurs, argumente de manière informelle et parfois hors-sujet.",
     icon: <Zap className="w-6 h-6" />,
     color: "text-emerald-400",
     border: "border-emerald-700",
@@ -27,8 +24,6 @@ const DIFFICULTIES: {
   },
   {
     value: "medium",
-    label: "Intermédiaire",
-    description: "L'IA construit des arguments solides mais commet quelques généralisations.",
     icon: <Sword className="w-6 h-6" />,
     color: "text-amber-400",
     border: "border-amber-700",
@@ -36,8 +31,6 @@ const DIFFICULTIES: {
   },
   {
     value: "hard",
-    label: "Expert",
-    description: "L'IA contra-argue directement, expose vos sophismes et ne laisse rien passer.",
     icon: <Brain className="w-6 h-6" />,
     color: "text-red-400",
     border: "border-red-700",
@@ -52,6 +45,7 @@ interface DifficultySelectorProps {
 
 export function DifficultySelector({ onStart, onCancel }: DifficultySelectorProps) {
   const [selectedDifficulty, setSelectedDifficulty] = useState<TrainingDifficulty>("medium");
+  const { t } = useTranslation();
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-slate-900 text-white px-4">
@@ -60,13 +54,13 @@ export function DifficultySelector({ onStart, onCancel }: DifficultySelectorProp
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-lg"
       >
-        <h2 className="text-3xl font-bold text-center mb-2">Mode Entraînement</h2>
+        <h2 className="text-3xl font-bold text-center mb-2">{t.matchmaking.trainingMode}</h2>
         <p className="text-slate-400 text-center mb-8">
-          Choisissez la difficulté de votre adversaire IA
+          {t.matchmaking.chooseDifficulty}
         </p>
 
         <div className="space-y-3 mb-8">
-          {DIFFICULTIES.map((d) => (
+          {DIFFICULTY_META.map((d) => (
             <button
               key={d.value}
               onClick={() => setSelectedDifficulty(d.value)}
@@ -79,12 +73,16 @@ export function DifficultySelector({ onStart, onCancel }: DifficultySelectorProp
             >
               <span className={cn("shrink-0", d.color)}>{d.icon}</span>
               <div>
-                <p className={cn("font-bold text-base", d.color)}>{d.label}</p>
-                <p className="text-sm text-slate-400">{d.description}</p>
+                <p className={cn("font-bold text-base", d.color)}>
+                  {t.common.difficultyLabels[d.value]}
+                </p>
+                <p className="text-sm text-slate-400">
+                  {t.matchmaking.difficultyDescs[d.value]}
+                </p>
               </div>
               {selectedDifficulty === d.value && (
                 <span className={cn("ml-auto text-xs font-bold px-2 py-1 rounded-full border", d.color, d.border)}>
-                  Sélectionné
+                  {t.matchmaking.selected}
                 </span>
               )}
             </button>
@@ -95,14 +93,14 @@ export function DifficultySelector({ onStart, onCancel }: DifficultySelectorProp
           className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 text-base"
           onClick={() => onStart(selectedDifficulty)}
         >
-          Commencer l&apos;entraînement
+          {t.matchmaking.startTraining}
         </Button>
         <Button
           variant="ghost"
           onClick={onCancel}
           className="w-full mt-3 text-slate-400 hover:text-white"
         >
-          Annuler
+          {t.common.cancel}
         </Button>
       </motion.div>
     </div>

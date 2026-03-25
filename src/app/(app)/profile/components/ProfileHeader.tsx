@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, Trophy, Calendar } from "lucide-react";
+import { useTranslation, fmt } from "@/lib/i18n/context";
 
 interface ProfileHeaderProps {
   username: string;
@@ -24,6 +25,7 @@ export default function ProfileHeader({
   memberSince,
   onBack,
 }: ProfileHeaderProps) {
+  const { t } = useTranslation();
   const winRate =
     wins + losses > 0 ? Math.round((wins / (wins + losses)) * 100) : 0;
   const xpProgress = (xp % 1000) / 10;
@@ -37,7 +39,7 @@ export default function ProfileHeader({
           className="text-white hover:bg-white/10 mb-6"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Retour
+          {t.profile.back}
         </Button>
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex items-center gap-6">
@@ -48,11 +50,11 @@ export default function ProfileHeader({
               <h1 className="text-3xl font-bold mb-2">{username}</h1>
               <div className="flex items-center gap-4 text-sm opacity-90">
                 <span className="flex items-center gap-1">
-                  <Trophy className="w-4 h-4" /> Niveau {level}
+                  <Trophy className="w-4 h-4" /> {t.common.level} {level}
                 </span>
                 {memberSince && (
                   <span className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" /> Depuis {memberSince}
+                    <Calendar className="w-4 h-4" /> {fmt(t.profile.since, { date: memberSince })}
                   </span>
                 )}
               </div>
@@ -65,13 +67,13 @@ export default function ProfileHeader({
             </div>
             <div className="text-center bg-white/10 backdrop-blur-sm rounded-xl px-6 py-4 border border-white/20">
               <div className="text-3xl font-bold">{winRate}%</div>
-              <div className="text-sm opacity-90">Win Rate</div>
+              <div className="text-sm opacity-90">{t.dashboard.winRate}</div>
             </div>
           </div>
         </div>
         <div className="mt-6 max-w-md">
           <div className="flex justify-between text-sm mb-2">
-            <span>Niveau {level}</span>
+            <span>{t.common.level} {level}</span>
             <span>{xp % 1000} / 1000 XP</span>
           </div>
           <Progress value={xpProgress} className="h-2" />

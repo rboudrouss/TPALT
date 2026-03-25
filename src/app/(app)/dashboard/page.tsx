@@ -2,21 +2,23 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { User, LogOut } from "lucide-react";
+import { User, LogOut, Trophy } from "lucide-react";
 import { useApp } from "@/lib/store";
 import { GameModeGrid } from "./components/GameModeGrid";
 import { StatsPanel } from "./components/StatsPanel";
+import { useTranslation, fmt } from "@/lib/i18n/context";
+import { LanguageToggle } from "@/components/ui/LanguageToggle";
 
 export default function DashboardPage() {
   const { state, dispatch } = useApp();
   const router = useRouter();
   const { user } = state;
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!user) router.replace("/");
   }, [user, router]);
 
-  // Refresh user stats from API on mount
   useEffect(() => {
     if (!user) return;
     fetch(`/api/users/${user.id}`)
@@ -62,27 +64,33 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-8">
       <header className="flex justify-between items-center mb-12 max-w-6xl mx-auto">
         <h1 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-50">
-          Bonjour, {user.username}
+          {fmt(t.dashboard.greeting, { name: user.username })}
         </h1>
-        <div className="flex gap-2">
-          <Button variant="ghost" size="icon" onClick={() => router.push("/profile")} title="Profil">
-            <User className="h-5 w-5" />
+        <nav className="flex items-center gap-1">
+          <LanguageToggle />
+          <Button variant="ghost" onClick={() => router.push("/leaderboard")} className="gap-2">
+            <Trophy className="h-4 w-4" />
+            {t.dashboard.leaderboard}
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleLogout} title="Déconnexion">
-            <LogOut className="h-5 w-5" />
+          <Button variant="ghost" onClick={() => router.push("/profile")} className="gap-2">
+            <User className="h-4 w-4" />
+            {t.dashboard.profile}
           </Button>
-        </div>
+          <Button variant="ghost" size="icon" onClick={handleLogout} title={t.dashboard.logout}>
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </nav>
       </header>
 
       <main className="max-w-6xl mx-auto">
         <h2 className="text-xl font-semibold mb-6 text-slate-700 dark:text-slate-300">
-          Choisir un mode de jeu
+          {t.dashboard.chooseMode}
         </h2>
         <GameModeGrid onSelectMode={handleSelectMode} />
 
         <div className="mt-12">
           <h2 className="text-xl font-semibold mb-6 text-slate-700 dark:text-slate-300">
-            Statistiques
+            {t.dashboard.statistics}
           </h2>
           <StatsPanel elo={user.elo} wins={user.wins} losses={user.losses} winRate={winRate} />
         </div>

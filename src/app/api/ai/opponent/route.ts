@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { callGroq } from "@/lib/groq";
 import {
   Difficulty,
-  OPPONENT_DIFFICULTY_PROMPTS,
   OPPONENT_DIFFICULTY_SETTINGS,
+  getOpponentDifficultyPrompt,
   buildOpponentUserPrompt,
 } from "@/lib/prompts";
+import type { Locale } from "@/lib/i18n/types";
 
 export async function POST(req: Request) {
   try {
@@ -16,6 +17,7 @@ export async function POST(req: Request) {
       userPosition,
       conversationHistory,
       difficulty = "medium",
+      locale = "fr",
       apiUrl,
       modelName,
       apiKey,
@@ -25,21 +27,26 @@ export async function POST(req: Request) {
       userPosition: string;
       conversationHistory: { role: "user" | "opponent"; content: string }[];
       difficulty: Difficulty;
+      locale: Locale;
       apiUrl?: string;
       modelName?: string;
       apiKey?: string;
     } = body;
 
-    const systemPrompt = OPPONENT_DIFFICULTY_PROMPTS[difficulty] ?? OPPONENT_DIFFICULTY_PROMPTS.medium;
+    const systemPrompt = getOpponentDifficultyPrompt(difficulty, locale);
     const { temperature, max_tokens } = OPPONENT_DIFFICULTY_SETTINGS[difficulty] ?? OPPONENT_DIFFICULTY_SETTINGS.medium;
+
+    const youLabel = locale === "en" ? "You" : "Toi";
+    const opponentLabel = locale === "en" ? "Opponent" : "Adversaire";
+    const noHistory = locale === "en" ? "No previous exchanges." : "Aucun échange précédent.";
 
     const historyText = conversationHistory.length > 0
       ? conversationHistory
-          .map((m) => `${m.role === "user" ? "Adversaire" : "Toi"}: ${m.content}`)
+          .map((m) => `${m.role === "user" ? opponentLabel : youLabel}: ${m.content}`)
           .join("\n")
-      : "Aucun échange précédent.";
+      : noHistory;
 
-    const userPrompt = buildOpponentUserPrompt(topic, opponentPosition, userPosition, historyText);
+    const userPrompt = buildOpponentUserPrompt(topic, opponentPosition, userPosition, historyText, locale);
 
     const reply = await callGroq(
       [
@@ -53,7 +60,7 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error("Opponent generation error:", error);
     return NextResponse.json(
-      { reply: "C'est un point intéressant, mais je ne suis pas convaincu. Votre raisonnement manque de preuves concrètes." },
+      { reply: "That's an interesting point, but I'm not convinced. Your reasoning lacks concrete evidence." },
       { status: 200 }
     );
   }

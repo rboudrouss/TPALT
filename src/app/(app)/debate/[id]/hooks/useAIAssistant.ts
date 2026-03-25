@@ -2,6 +2,7 @@
 
 import { useState, useEffect, RefObject } from "react";
 import { Message } from "./types";
+import { useTranslation } from "@/lib/i18n/context";
 
 interface UseAIAssistantParams {
   gameMode: string | null | undefined;
@@ -22,6 +23,7 @@ export function useAIAssistant({
   messagesRef,
   turnCount,
 }: UseAIAssistantParams) {
+  const { locale } = useTranslation();
   const [aiHint, setAiHint] = useState("");
   const [liveEvaluation, setLiveEvaluation] = useState<any>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
@@ -41,6 +43,7 @@ export function useAIAssistant({
         body: JSON.stringify({
           topic,
           position,
+          locale,
           messages: messagesRef.current.slice(-4).map((m) => ({
             sender: m.sender,
             content: m.content,
@@ -50,7 +53,11 @@ export function useAIAssistant({
       const data = await res.json();
       setAiHint(data.hint || "");
     } catch {
-      setAiHint("Structurez votre argument avec une thèse et des exemples.");
+      setAiHint(
+        locale === "en"
+          ? "Structure your argument with a thesis and examples."
+          : "Structurez votre argument avec une thèse et des exemples."
+      );
     }
   };
 
@@ -81,7 +88,7 @@ export function useAIAssistant({
       const res = await fetch("/api/ai/evaluate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ debateContext }),
+        body: JSON.stringify({ debateContext, locale }),
       });
 
       if (res.ok) {

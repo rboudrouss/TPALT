@@ -1,4 +1,7 @@
-export const TOPICS: string[] = [
+import type { Locale } from "./i18n/types";
+import { TOPICS_EN } from "./i18n/topics-en";
+
+export const TOPICS_FR: string[] = [
   // Technologie & IA
   "L'intelligence artificielle est une menace pour la créativité humaine.",
   "Les réseaux sociaux nuisent à la démocratie.",
@@ -120,6 +123,10 @@ export const TOPICS: string[] = [
   "Le soft power est une forme d'ingérence culturelle.",
 ];
 
-export function getRandomTopic(): string {
-  return TOPICS[Math.floor(Math.random() * TOPICS.length)];
+/** @deprecated Use getRandomTopic(locale) instead */
+export const TOPICS = TOPICS_FR;
+
+export function getRandomTopic(locale: Locale = "fr"): string {
+  const topics = locale === "en" ? TOPICS_EN : TOPICS_FR;
+  return topics[Math.floor(Math.random() * topics.length)];
 }

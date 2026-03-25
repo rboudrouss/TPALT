@@ -2,18 +2,7 @@
 
 import { BrainCircuit, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const EVENT_TYPE_LABELS: Record<string, string> = {
-  claim: "Affirmation",
-  evidence: "Preuve",
-  nuance: "Nuance",
-  counter_argument: "Contre-argument",
-  sophism: "Sophisme",
-  ad_hominem: "Ad Hominem",
-  irrelevance: "Hors-sujet",
-  repetition: "Répétition",
-  wrong_side: "Mauvais camp ⚠️",
-};
+import { useTranslation, fmt } from "@/lib/i18n/context";
 
 interface RightSidebarProps {
   gameMode: string | null | undefined;
@@ -54,15 +43,17 @@ function RankedPanel({
   opponentName: string;
   cheatCount: number;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div className="h-full flex flex-col gap-4">
       <div className="flex items-center gap-2 mb-2 text-indigo-600 dark:text-indigo-400">
         <ShieldAlert className="w-5 h-5" />
-        <h3 className="font-semibold">Mode Classé</h3>
+        <h3 className="font-semibold">{t.debate.rankedMode}</h3>
       </div>
       <div className="bg-white/50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700 space-y-3">
         <div className="flex justify-between items-center">
-          <span className="text-xs font-semibold text-slate-500">Vous</span>
+          <span className="text-xs font-semibold text-slate-500">{t.common.you}</span>
           <span className="font-bold text-indigo-600">{scores.A}</span>
         </div>
         <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
@@ -78,8 +69,8 @@ function RankedPanel({
       </div>
       {cheatCount > 0 && (
         <div className="text-xs text-red-500 bg-red-50 dark:bg-red-900/20 p-2 rounded border border-red-200 dark:border-red-800">
-          ⚠️ {cheatCount} infraction{cheatCount > 1 ? "s" : ""} détectée{cheatCount > 1 ? "s" : ""}
-          {cheatCount >= 3 && " — pénalité appliquée"}
+          ⚠️ {fmt(t.debate.infraction, { count: cheatCount })}
+          {cheatCount >= 3 && ` — ${t.debate.penaltyApplied}`}
         </div>
       )}
     </div>
@@ -95,34 +86,36 @@ function AIAssistantPanel({
   liveEvaluation: any;
   isEvaluating: boolean;
 }) {
+  const { t } = useTranslation();
+
   return (
     <div className="h-full flex flex-col gap-4">
       <div>
         <div className="flex items-center gap-2 mb-4 text-indigo-600 dark:text-indigo-400">
           <BrainCircuit className="w-5 h-5" />
-          <h3 className="font-semibold">Assistant IA</h3>
+          <h3 className="font-semibold">{t.debate.aiAssistant}</h3>
         </div>
         <div className="bg-white/50 dark:bg-slate-800/50 p-3 rounded-lg text-sm text-slate-600 dark:text-slate-300 border border-indigo-100 dark:border-indigo-900/30">
-          <p>💡 <strong>Conseil :</strong> {aiHint || "Chargement..."}</p>
+          <p>💡 <strong>{t.debate.hint} :</strong> {aiHint || t.debate.hintLoading}</p>
         </div>
       </div>
 
       <div>
         <div className="flex items-center gap-2 mb-2 text-indigo-600 dark:text-indigo-400">
           <ShieldAlert className="w-5 h-5" />
-          <h3 className="font-semibold">Analyse du dernier coup</h3>
+          <h3 className="font-semibold">{t.debate.lastMoveAnalysis}</h3>
         </div>
 
         <div className="bg-white/50 dark:bg-slate-800/50 p-3 rounded-lg text-sm border border-slate-200 dark:border-slate-700 min-h-[150px]">
           {isEvaluating ? (
             <div className="animate-pulse text-slate-400 flex items-center justify-center h-full text-xs italic">
-              Analyse de l&apos;argument...
+              {t.debate.analyzingArgument}
             </div>
           ) : liveEvaluation?.evaluation_summary ? (
             <EvaluationResult liveEvaluation={liveEvaluation} />
           ) : (
             <div className="text-slate-400 flex items-center justify-center h-full text-xs italic">
-              Envoyez un argument pour voir l&apos;analyse.
+              {t.debate.sendToAnalyze}
             </div>
           )}
         </div>
@@ -132,10 +125,12 @@ function AIAssistantPanel({
 }
 
 function EvaluationResult({ liveEvaluation }: { liveEvaluation: any }) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-3">
       <div className="flex justify-between items-center bg-slate-100 dark:bg-slate-900 p-2 rounded">
-        <span className="text-xs uppercase font-medium text-slate-500">Qualité</span>
+        <span className="text-xs uppercase font-medium text-slate-500">{t.debate.quality}</span>
         <span className={cn(
           "font-bold capitalize",
           liveEvaluation.evaluation_summary.move_quality === "brilliant" ? "text-purple-600" :
@@ -147,7 +142,7 @@ function EvaluationResult({ liveEvaluation }: { liveEvaluation: any }) {
       </div>
 
       <div className="flex justify-between items-center bg-slate-100 dark:bg-slate-900 p-2 rounded">
-        <span className="text-xs uppercase font-medium text-slate-500">Score Delta</span>
+        <span className="text-xs uppercase font-medium text-slate-500">{t.debate.scoreDelta}</span>
         <span className={cn(
           "font-bold",
           liveEvaluation.score_update?.delta > 0 ? "text-green-600" : "text-red-500"
@@ -158,7 +153,7 @@ function EvaluationResult({ liveEvaluation }: { liveEvaluation: any }) {
 
       {liveEvaluation.events && liveEvaluation.events.length > 0 && (
         <div className="mt-2">
-          <span className="text-xs font-semibold text-slate-500 mb-1 block">Événements Détectés :</span>
+          <span className="text-xs font-semibold text-slate-500 mb-1 block">{t.debate.detectedEvents}</span>
           <ul className="space-y-1">
             {liveEvaluation.events.map((ev: any, idx: number) => (
               <li key={idx} className="text-xs p-1.5 bg-slate-50 dark:bg-slate-800 rounded border border-slate-100 dark:border-slate-700 flex justify-between items-start">
@@ -169,7 +164,7 @@ function EvaluationResult({ liveEvaluation }: { liveEvaluation: any }) {
                       ? "text-red-500"
                       : "text-indigo-500"
                   )}>
-                    {EVENT_TYPE_LABELS[ev.type] ?? ev.type}
+                    {t.debate.eventTypes[ev.type as keyof typeof t.debate.eventTypes] ?? ev.type}
                   </span>
                   <span className="text-slate-600 dark:text-slate-300">{ev.description}</span>
                 </div>

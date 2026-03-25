@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/lib/store";
+import { useTranslation } from "@/lib/i18n/context";
 import { useProfile, computeCurrentStreak, computeMaxStreak, computeAverageScore } from "./hooks/useProfile";
 import ProfileHeader from "./components/ProfileHeader";
 import ProfileTabs from "./components/ProfileTabs";
@@ -14,6 +15,7 @@ type Tab = "overview" | "history" | "achievements";
 export default function ProfilePage() {
   const { state } = useApp();
   const router = useRouter();
+  const { t } = useTranslation();
   const { user } = state;
   const [activeTab, setActiveTab] = useState<Tab>("overview");
 
@@ -38,7 +40,7 @@ export default function ProfilePage() {
   const maxStreak = computeMaxStreak(rankedDebates, user.id);
   const avgScore = computeAverageScore(rankedDebates, user.id);
   const memberSince = profile?.createdAt
-    ? new Date(profile.createdAt).toLocaleDateString("fr-FR", {
+    ? new Date(profile.createdAt).toLocaleDateString(t.dateLocale, {
         month: "long",
         year: "numeric",
       })

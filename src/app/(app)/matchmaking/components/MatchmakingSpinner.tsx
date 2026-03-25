@@ -4,22 +4,16 @@ import { motion } from "motion/react";
 import { Loader2, Zap, Sword, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-const modeLabels: Record<string, string> = {
-  training: "Entraînement",
-  casual: "Casual",
-  ranked: "Classé",
-};
+import { useTranslation } from "@/lib/i18n/context";
 
 const DIFFICULTIES: {
   value: string;
-  label: string;
   color: string;
   icon: React.ReactNode;
 }[] = [
-  { value: "easy", label: "Débutant", color: "text-emerald-400", icon: <Zap className="w-4 h-4" /> },
-  { value: "medium", label: "Intermédiaire", color: "text-amber-400", icon: <Sword className="w-4 h-4" /> },
-  { value: "hard", label: "Expert", color: "text-red-400", icon: <Brain className="w-4 h-4" /> },
+  { value: "easy", color: "text-emerald-400", icon: <Zap className="w-4 h-4" /> },
+  { value: "medium", color: "text-amber-400", icon: <Sword className="w-4 h-4" /> },
+  { value: "hard", color: "text-red-400", icon: <Brain className="w-4 h-4" /> },
 ];
 
 interface MatchmakingSpinnerProps {
@@ -30,6 +24,7 @@ interface MatchmakingSpinnerProps {
 }
 
 export function MatchmakingSpinner({ status, gameMode, trainingDifficulty, onCancel }: MatchmakingSpinnerProps) {
+  const { t } = useTranslation();
   const difficulty = DIFFICULTIES.find((d) => d.value === trainingDifficulty);
 
   return (
@@ -52,28 +47,28 @@ export function MatchmakingSpinner({ status, gameMode, trainingDifficulty, onCan
         </div>
       </motion.div>
 
-      <h2 className="text-2xl font-bold mb-2">Matchmaking en cours</h2>
+      <h2 className="text-2xl font-bold mb-2">{t.matchmaking.searching}</h2>
       <p className="text-indigo-200 text-lg animate-pulse">{status}</p>
 
       <div className="mt-8 text-sm text-slate-400 border border-slate-700 rounded-lg p-4 bg-slate-800/50 flex flex-col items-center gap-1">
         <span>
-          Mode:{" "}
+          {t.matchmaking.mode}:{" "}
           <span className="text-white font-semibold uppercase">
-            {modeLabels[gameMode] ?? gameMode}
+            {t.common.modeLabels[gameMode as keyof typeof t.common.modeLabels] ?? gameMode}
           </span>
         </span>
         {gameMode === "training" && difficulty && (
           <span>
-            Difficulté:{" "}
+            {t.matchmaking.difficulty}:{" "}
             <span className={cn("font-semibold", difficulty.color)}>
-              {difficulty.label}
+              {t.common.difficultyLabels[difficulty.value as keyof typeof t.common.difficultyLabels]}
             </span>
           </span>
         )}
       </div>
 
       <Button variant="ghost" onClick={onCancel} className="mt-8 text-slate-400 hover:text-white">
-        Annuler
+        {t.common.cancel}
       </Button>
     </div>
   );

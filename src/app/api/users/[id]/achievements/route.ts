@@ -50,7 +50,8 @@ export async function GET(
 
     const stats = computeStats(debates, userId, user.wins, user.losses, user.elo, user.level, user.xp);
     const existingUnlocks = new Map(user.achievements.map((a) => [a.achievementId, a.unlockedAt]));
-    const categories = evaluateAll(stats, existingUnlocks);
+    const locale = new URL(_req.url).searchParams.get("locale") === "en" ? "en" as const : "fr" as const;
+    const categories = evaluateAll(stats, existingUnlocks, locale);
 
     return NextResponse.json(categories);
   } catch (error) {
@@ -118,7 +119,8 @@ export async function POST(
       updated.forEach((a) => existingUnlocks.set(a.achievementId, a.unlockedAt));
     }
 
-    const categories = evaluateAll(stats, existingUnlocks);
+    const locale = new URL(_req.url).searchParams.get("locale") === "en" ? "en" as const : "fr" as const;
+    const categories = evaluateAll(stats, existingUnlocks, locale);
     return NextResponse.json({ categories, newlyUnlocked: regularUnlocks });
   } catch (error) {
     console.error("POST achievements error:", error);

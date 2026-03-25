@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
+import { useTranslation } from "@/lib/i18n/context";
 
 interface Sophism {
   name: string;
@@ -14,12 +15,14 @@ interface SophismsCardProps {
 }
 
 export function SophismsCard({ sophisms }: SophismsCardProps) {
+  const { t } = useTranslation();
+
   return (
     <Card className="border-red-100 bg-red-50/50 dark:bg-red-900/10 dark:border-red-900/30">
       <CardHeader>
         <CardTitle className="text-red-700 dark:text-red-400 flex items-center gap-2 text-lg">
           <AlertTriangle className="w-5 h-5" />
-          Sophismes Détectés
+          {t.analysis.sophismsDetected}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -35,7 +38,7 @@ export function SophismsCard({ sophisms }: SophismsCardProps) {
               </li>
             ))
           ) : (
-            <li className="text-sm text-emerald-700">Aucun sophisme détecté !</li>
+            <li className="text-sm text-emerald-700">{t.analysis.noSophisms}</li>
           )}
         </ul>
       </CardContent>
