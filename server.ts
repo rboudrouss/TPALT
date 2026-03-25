@@ -32,6 +32,8 @@ interface QueueEntry {
   ws: WebSocket;
   userId: string;
   locale: string;
+  elo: number;
+  queuedAt: number; // ms timestamp — used for window expansion
 }
 // mode -> waiting players
 const matchmakingQueues = new Map<string, QueueEntry[]>();
@@ -41,6 +43,26 @@ function removeFromQueue(mode: string, userId: string) {
   if (!queue) return;
   const idx = queue.findIndex((e) => e.userId === userId);
   if (idx >= 0) queue.splice(idx, 1);
+}
+
+// For ranked: find closest ELO within an expanding window (±150 base, +50 per 10s).
+// For other modes: first non-self entry (FIFO).
+function findBestMatch(queue: QueueEntry[], userId: string, elo: number, mode: string): number {
+  // if (mode !== "ranked") {
+  //   return queue.findIndex((e) => e.userId !== userId);
+  // }
+  let bestIdx = -1;
+  let bestDiff = Infinity;
+  const now = Date.now();
+  for (let i = 0; i < queue.length; i++) {
+    const entry = queue[i];
+    if (entry.userId === userId) continue;
+    const waitSecs = (now - entry.queuedAt) / 1000;
+    const window = Math.min(150 + Math.floor(waitSecs / 10) * 50, 500);
+    const diff = Math.abs(elo - entry.elo);
+    if (diff <= window && diff < bestDiff) { bestIdx = i; bestDiff = diff; }
+  }
+  return bestIdx;
 }
 
 function getOrCreateRoom(debateId: string): Room {
@@ -207,7 +229,14 @@ app.prepare().then(() => {
           // Don't add twice
           if (queue.find((e) => e.userId === userId)) return;
 
-          const opponentIdx = queue.findIndex((e) => e.userId !== userId);
+          // Fetch ELO for ranked matching (0 for other modes — not used)
+          let elo = 0;
+          if (mode === "ranked") {
+            const user = await db.user.findUnique({ where: { id: userId }, select: { elo: true } });
+            elo = user?.elo ?? 1200;
+          }
+
+          const opponentIdx = findBestMatch(queue, userId, elo, mode);
 
           if (opponentIdx >= 0) {
             // Match found — create debate atomically on the server
@@ -230,14 +259,15 @@ app.prepare().then(() => {
               },
             });
 
-            console.log(`[MM] matched ${opponent.userId.slice(-4)} vs ${userId.slice(-4)} → debate ${debate.id.slice(-6)}`);
+            const eloDiff = mode === "ranked" ? ` (Δelo=${Math.abs(elo - opponent.elo)})` : "";
+            console.log(`[MM] matched ${opponent.userId.slice(-4)} vs ${userId.slice(-4)} → debate ${debate.id.slice(-6)}${eloDiff}`);
             send(opponent.ws, { type: "matched", debateId: debate.id, playerRole: "player1" });
             send(ws, { type: "matched", debateId: debate.id, playerRole: "player2" });
           } else {
             // No opponent yet — join the queue
-            queue.push({ ws, userId, locale: locale ?? "fr" });
+            queue.push({ ws, userId, locale: locale ?? "fr", elo, queuedAt: Date.now() });
             connQueued = { mode, userId };
-            console.log(`[MM] ${userId.slice(-4)} queued for ${mode} | queue size=${queue.length}`);
+            console.log(`[MM] ${userId.slice(-4)} queued for ${mode}${mode === "ranked" ? ` elo=${elo}` : ""} | queue size=${queue.length}`);
             send(ws, { type: "queued" });
           }
         }
