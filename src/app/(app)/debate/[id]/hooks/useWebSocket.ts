@@ -133,8 +133,16 @@ export function useWebSocket({
       }
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
       wsRef.current = null;
+      if (!event.wasClean) {
+        setters.setIsMyTurn(false);
+        setters.setIsOpponentTyping(false);
+        setters.setMessages((prev) => [
+          ...prev,
+          { id: `sys_${Date.now()}`, sender: "system", content: "Connexion perdue. Veuillez recharger la page.", timestamp: new Date() },
+        ]);
+      }
     };
 
     return () => {

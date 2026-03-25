@@ -5,6 +5,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { Duplex } from "stream";
 import { PrismaClient } from "./src/app/generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { getRandomTopic } from "./src/lib/topics";
 
 const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
@@ -16,6 +17,7 @@ const adapter = new PrismaBetterSqlite3({
 const db = new PrismaClient({ adapter });
 
 type PlayerRole = "player1" | "player2";
+type HeartbeatWS = WebSocket & { isAlive: boolean };
 
 interface Room {
   currentTurn: PlayerRole | null;
@@ -24,6 +26,22 @@ interface Room {
 }
 
 const rooms = new Map<string, Room>();
+
+// ── Matchmaking queue ─────────────────────────────────────────────────────────
+interface QueueEntry {
+  ws: WebSocket;
+  userId: string;
+  locale: string;
+}
+// mode -> waiting players
+const matchmakingQueues = new Map<string, QueueEntry[]>();
+
+function removeFromQueue(mode: string, userId: string) {
+  const queue = matchmakingQueues.get(mode);
+  if (!queue) return;
+  const idx = queue.findIndex((e) => e.userId === userId);
+  if (idx >= 0) queue.splice(idx, 1);
+}
 
 function getOrCreateRoom(debateId: string): Room {
   if (!rooms.has(debateId)) {
@@ -57,6 +75,17 @@ app.prepare().then(() => {
   // Use noServer mode so upgrade events don't conflict with Next.js HMR
   const wss = new WebSocketServer({ noServer: true });
 
+  // ── Heartbeat ─────────────────────────────────────────────────────────────
+  const heartbeatInterval = setInterval(() => {
+    wss.clients.forEach((client) => {
+      const ws = client as HeartbeatWS;
+      if (!ws.isAlive) { ws.terminate(); return; }
+      ws.isAlive = false;
+      ws.ping();
+    });
+  }, 15_000);
+  wss.on("close", () => clearInterval(heartbeatInterval));
+
   server.on("upgrade", (req: IncomingMessage, socket: Duplex, head: Buffer) => {
     const { pathname } = new URL(req.url || "/", "http://localhost");
     if (pathname === "/ws") {
@@ -67,9 +96,14 @@ app.prepare().then(() => {
     // Other upgrade paths (Next.js HMR etc.) are left untouched
   });
 
-  wss.on("connection", (ws: WebSocket) => {
+  wss.on("connection", (rawWs: WebSocket) => {
+    const ws = rawWs as HeartbeatWS;
+    ws.isAlive = true;
+    ws.on("pong", () => { ws.isAlive = true; });
+
     let connDebateId: string | null = null;
     let connRole: PlayerRole | null = null;
+    let connQueued: { mode: string; userId: string } | null = null;
 
     ws.on("message", async (raw) => {
       let msg: any;
@@ -162,6 +196,61 @@ app.prepare().then(() => {
             .catch(err => console.error("[WS] save message failed:", err));
         }
 
+        // ── queue (matchmaking) ───────────────────────────────────────────
+        if (msg.type === "queue") {
+          const { userId, mode, locale } = msg;
+          if (!userId || !mode) return;
+
+          if (!matchmakingQueues.has(mode)) matchmakingQueues.set(mode, []);
+          const queue = matchmakingQueues.get(mode)!;
+
+          // Don't add twice
+          if (queue.find((e) => e.userId === userId)) return;
+
+          const opponentIdx = queue.findIndex((e) => e.userId !== userId);
+
+          if (opponentIdx >= 0) {
+            // Match found — create debate atomically on the server
+            const opponent = queue.splice(opponentIdx, 1)[0];
+            connQueued = null;
+
+            const topic = getRandomTopic(locale ?? opponent.locale ?? "fr");
+            const player1Position = Math.random() < 0.5 ? "POUR" : "CONTRE";
+
+            const debate = await db.debate.create({
+              data: {
+                topic,
+                mode,
+                player1Id: opponent.userId,
+                player1Position,
+                player2Position: player1Position === "POUR" ? "CONTRE" : "POUR",
+                player2Id: userId,
+                status: "active",
+                startedAt: new Date(),
+              },
+            });
+
+            console.log(`[MM] matched ${opponent.userId.slice(-4)} vs ${userId.slice(-4)} → debate ${debate.id.slice(-6)}`);
+            send(opponent.ws, { type: "matched", debateId: debate.id, playerRole: "player1" });
+            send(ws, { type: "matched", debateId: debate.id, playerRole: "player2" });
+          } else {
+            // No opponent yet — join the queue
+            queue.push({ ws, userId, locale: locale ?? "fr" });
+            connQueued = { mode, userId };
+            console.log(`[MM] ${userId.slice(-4)} queued for ${mode} | queue size=${queue.length}`);
+            send(ws, { type: "queued" });
+          }
+        }
+
+        // ── cancel_queue ──────────────────────────────────────────────────
+        if (msg.type === "cancel_queue") {
+          if (connQueued) {
+            removeFromQueue(connQueued.mode, connQueued.userId);
+            console.log(`[MM] ${connQueued.userId.slice(-4)} left queue for ${connQueued.mode}`);
+            connQueued = null;
+          }
+        }
+
         // ── timeout ───────────────────────────────────────────────────────
         if (msg.type === "timeout") {
           const { debateId } = msg;
@@ -180,6 +269,10 @@ app.prepare().then(() => {
     });
 
     ws.on("close", () => {
+      if (connQueued) {
+        removeFromQueue(connQueued.mode, connQueued.userId);
+        console.log(`[MM] ${connQueued.userId.slice(-4)} disconnected — removed from queue`);
+      }
       if (connDebateId && connRole) {
         const room = rooms.get(connDebateId);
         if (room) {

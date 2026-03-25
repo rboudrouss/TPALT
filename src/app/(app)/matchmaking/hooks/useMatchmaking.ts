@@ -13,17 +13,21 @@ export function useMatchmaking(difficultySelected: boolean): {
   const router = useRouter();
   const { t, locale } = useTranslation();
   const [status, setStatus] = useState(t.matchmaking.statusSearching);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const matchmakingWsRef = useRef<WebSocket | null>(null);
 
-  const stopPolling = () => {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
+  const closeMatchmakingWs = () => {
+    const ws = matchmakingWsRef.current;
+    if (ws) {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: "cancel_queue" }));
+      }
+      ws.close();
+      matchmakingWsRef.current = null;
     }
   };
 
   const handleCancel = () => {
-    stopPolling();
+    closeMatchmakingWs();
     dispatch({ type: "SET_GAME_MODE", payload: null });
     dispatch({ type: "SET_TRAINING_DIFFICULTY", payload: null });
     dispatch({ type: "SET_PLAYER_ROLE", payload: null });
@@ -59,65 +63,43 @@ export function useMatchmaking(difficultySelected: boolean): {
       return () => timers.forEach(clearTimeout);
     }
 
-    const startMultiplayer = async () => {
-      if (!state.user || !state.gameMode) return;
+    setStatus(t.matchmaking.statusSearching);
 
-      try {
-        setStatus(t.matchmaking.statusSearching);
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+    matchmakingWsRef.current = ws;
 
-        const listRes = await fetch(`/api/debates?mode=${state.gameMode}&status=waiting`);
-        const debates: { id: string; player1Id: string }[] = await listRes.json();
-        const joinable = debates.find((d) => d.player1Id !== state.user!.id);
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ type: "queue", userId: state.user!.id, mode: state.gameMode, locale }));
+    };
 
-        if (joinable) {
-          setStatus(t.matchmaking.statusFound);
-          await fetch(`/api/debates/${joinable.id}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              player2Id: state.user!.id,
-              status: "active",
-              startedAt: new Date().toISOString(),
-            }),
-          });
-          dispatch({ type: "SET_DEBATE_ID", payload: joinable.id });
-          dispatch({ type: "SET_PLAYER_ROLE", payload: "player2" });
-          router.push(`/debate/${joinable.id}`);
-          return;
-        }
-
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data);
+      if (msg.type === "queued") {
         setStatus(t.matchmaking.statusWaiting);
-        const createRes = await fetch("/api/debates", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ playerId: state.user!.id, mode: state.gameMode, locale }),
-        });
-        if (!createRes.ok) throw new Error("Failed to create debate");
-        const debate = await createRes.json();
-        dispatch({ type: "SET_DEBATE_ID", payload: debate.id });
-        dispatch({ type: "SET_PLAYER_ROLE", payload: "player1" });
+      }
+      if (msg.type === "matched") {
+        setStatus(t.matchmaking.statusFound);
+        dispatch({ type: "SET_DEBATE_ID", payload: msg.debateId });
+        dispatch({ type: "SET_PLAYER_ROLE", payload: msg.playerRole });
+        ws.close();
+        matchmakingWsRef.current = null;
+        router.push(`/debate/${msg.debateId}`);
+      }
+    };
 
-        pollRef.current = setInterval(async () => {
-          try {
-            const stateRes = await fetch(`/api/debates/${debate.id}`);
-            const updated = await stateRes.json();
-            if (updated.player2Id) {
-              stopPolling();
-              setStatus(t.matchmaking.statusFound);
-              router.push(`/debate/${debate.id}`);
-            }
-          } catch {
-            // ignore polling errors
-          }
-        }, 500);
-      } catch (error) {
-        console.error("Matchmaking error:", error);
+    ws.onerror = () => {
+      setStatus(t.matchmaking.statusError);
+    };
+
+    ws.onclose = (event) => {
+      matchmakingWsRef.current = null;
+      if (!event.wasClean) {
         setStatus(t.matchmaking.statusError);
       }
     };
 
-    startMultiplayer();
-    return () => stopPolling();
+    return () => closeMatchmakingWs();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [difficultySelected, dispatch, state.gameMode, state.user, router]);
 
