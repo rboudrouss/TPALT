@@ -123,9 +123,6 @@ export const TOPICS_FR: string[] = [
   "Le soft power est une forme d'ingérence culturelle.",
 ];
 
-/** @deprecated Use getRandomTopic(locale) instead */
-export const TOPICS = TOPICS_FR;
-
 export function getRandomTopic(locale: Locale = "fr"): string {
   const topics = locale === "en" ? TOPICS_EN : TOPICS_FR;
   return topics[Math.floor(Math.random() * topics.length)];
