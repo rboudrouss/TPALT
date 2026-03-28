@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import { ArrowLeft, Crown, Medal } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,22 +23,15 @@ export default function LeaderboardPage() {
   const { state } = useApp();
   const router = useRouter();
   const { t } = useTranslation();
-  const [users, setUsers] = useState<LeaderboardUser[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: users = [], isLoading: loading } = useQuery<LeaderboardUser[]>({
+    queryKey: ["leaderboard"],
+    queryFn: () => fetch("/api/leaderboard").then((res) => (res.ok ? res.json() : [])),
+  });
 
-  useEffect(() => {
-    if (!state.user) router.replace("/");
-  }, [state.user, router]);
-
-  useEffect(() => {
-    fetch("/api/leaderboard")
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => setUsers(data))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (!state.user) return null;
+  if (!state.user) {
+    router.replace("/");
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 p-8">

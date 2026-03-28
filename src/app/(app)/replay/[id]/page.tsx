@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -52,23 +52,17 @@ export default function ReplayPage() {
   const params = useParams();
   const debateId = params.id as string;
 
-  const [debate, setDebate] = useState<DebateData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: debate = null, isLoading: loading } = useQuery<DebateData | null>({
+    queryKey: ["debate", debateId],
+    queryFn: () =>
+      fetch(`/api/debates/${debateId}`).then((res) => (res.ok ? res.json() : null)),
+    enabled: !!debateId,
+  });
 
-  useEffect(() => {
-    if (!state.user) router.replace("/");
-  }, [state.user, router]);
-
-  useEffect(() => {
-    if (!debateId) return;
-    fetch(`/api/debates/${debateId}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => setDebate(data))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [debateId]);
-
-  if (!state.user) return null;
+  if (!state.user) {
+    router.replace("/");
+    return null;
+  }
 
   if (loading) {
     return (

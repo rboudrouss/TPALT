@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, RefObject } from "react";
+import { useState, RefObject } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Message } from "./types";
 import { useTranslation } from "@/lib/i18n/context";
 
@@ -24,19 +25,15 @@ export function useAIAssistant({
   turnCount,
 }: UseAIAssistantParams) {
   const { locale } = useTranslation();
-  const [aiHint, setAiHint] = useState("");
   const [liveEvaluation, setLiveEvaluation] = useState<any>(null);
-  const [isEvaluating, setIsEvaluating] = useState(false);
   const [scores, setScores] = useState({ A: 50, B: 50 });
 
-  useEffect(() => {
-    if ((gameMode === "casual" || gameMode === "training") && isMyTurn && debateReady) {
-      fetchAIHint();
-    }
-  }, [isMyTurn, gameMode, debateReady]);
+  const isHintEnabled =
+    (gameMode === "casual" || gameMode === "training") && isMyTurn && debateReady;
 
-  const fetchAIHint = async () => {
-    try {
+  const { data: aiHint = "" } = useQuery({
+    queryKey: ["ai-hint", topic, position, locale, turnCount],
+    queryFn: async () => {
       const res = await fetch("/api/ai/hint", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -51,20 +48,20 @@ export function useAIAssistant({
         }),
       });
       const data = await res.json();
-      setAiHint(data.hint || "");
-    } catch {
-      setAiHint(
-        locale === "en"
+      return (
+        data.hint ||
+        (locale === "en"
           ? "Structure your argument with a thesis and examples."
-          : "Structurez votre argument avec une thèse et des exemples."
+          : "Structurez votre argument avec une thèse et des exemples.")
       );
-    }
-  };
+    },
+    enabled: isHintEnabled,
+    staleTime: Infinity,
+    retry: false,
+  });
 
-  const runLiveEvaluation = async (userMsg: string) => {
-    setIsEvaluating(true);
-    setLiveEvaluation(null);
-    try {
+  const { mutate: runLiveEvaluation, isPending: isEvaluating } = useMutation({
+    mutationFn: async (userMsg: string) => {
       const debateContext = {
         debate_meta: {
           topic,
@@ -90,21 +87,20 @@ export function useAIAssistant({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ debateContext, locale }),
       });
-
-      if (res.ok) {
-        const data = await res.json();
-        setLiveEvaluation(data);
-        if (data.score_update) {
-          const { player, new_score } = data.score_update;
-          setScores((prev) => ({ ...prev, [player]: Math.max(0, Math.min(100, new_score)) }));
-        }
+      if (!res.ok) throw new Error("Evaluation failed");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      setLiveEvaluation(data);
+      if (data.score_update) {
+        const { player, new_score } = data.score_update;
+        setScores((prev) => ({ ...prev, [player]: Math.max(0, Math.min(100, new_score)) }));
       }
-    } catch (e) {
+    },
+    onError: (e) => {
       console.error("Live evaluation failed:", e);
-    } finally {
-      setIsEvaluating(false);
-    }
-  };
+    },
+  });
 
   return { aiHint, liveEvaluation, isEvaluating, scores, runLiveEvaluation };
 }

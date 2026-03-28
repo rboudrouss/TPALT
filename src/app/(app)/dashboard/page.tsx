@@ -1,6 +1,7 @@
 "use client";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { User, LogOut, Trophy } from "lucide-react";
 import { useApp } from "@/lib/store";
@@ -15,33 +16,32 @@ export default function DashboardPage() {
   const { user } = state;
   const { t } = useTranslation();
 
-  useEffect(() => {
-    if (!user) router.replace("/");
-  }, [user, router]);
+  const { data: freshUser } = useQuery({
+    queryKey: ["user", user?.id],
+    queryFn: () => fetch(`/api/users/${user!.id}`).then((res) => (res.ok ? res.json() : null)),
+    enabled: !!user,
+  });
 
   useEffect(() => {
-    if (!user) return;
-    fetch(`/api/users/${user.id}`)
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => {
-        if (data) {
-          dispatch({
-            type: "SET_USER",
-            payload: {
-              id: data.id,
-              username: data.username,
-              elo: data.elo,
-              level: data.level,
-              xp: data.xp,
-              wins: data.wins,
-              losses: data.losses,
-            },
-          });
-        }
-      })
-      .catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!user) {
+      router.replace("/");
+      return;
+    }
+    if (freshUser) {
+      dispatch({
+        type: "SET_USER",
+        payload: {
+          id: freshUser.id,
+          username: freshUser.username,
+          elo: freshUser.elo,
+          level: freshUser.level,
+          xp: freshUser.xp,
+          wins: freshUser.wins,
+          losses: freshUser.losses,
+        },
+      });
+    }
+  }, [freshUser, user, router, dispatch]);
 
   const handleSelectMode = (mode: "training" | "casual" | "ranked") => {
     dispatch({ type: "SET_GAME_MODE", payload: mode });

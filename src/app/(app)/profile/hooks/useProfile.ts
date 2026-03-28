@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import type { AchievementResult } from "@/lib/achievements";
 import type { Locale, Translations } from "@/lib/i18n/types";
 import { fmt, useTranslation } from "@/lib/i18n/context";
@@ -94,36 +94,28 @@ interface UseProfileReturn {
 
 export function useProfile(userId: string | undefined): UseProfileReturn {
   const { locale } = useTranslation();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [achievementCategories, setAchievementCategories] = useState<
-    { category: string; items: AchievementResult[] }[]
-  >([]);
-  const [achievementsLoading, setAchievementsLoading] = useState(false);
 
-  useEffect(() => {
-    if (!userId) return;
-    setLoading(true);
-    fetch(`/api/users/${userId}`)
-      .then((res) => res.json())
-      .then((data: UserProfile) => {
-        setProfile(data);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [userId]);
+  const { data: profile = null, isLoading: loading } = useQuery<UserProfile>({
+    queryKey: ["user-profile", userId],
+    queryFn: () => fetch(`/api/users/${userId}`).then((res) => res.json()),
+    enabled: !!userId,
+  });
 
-  useEffect(() => {
-    if (!userId || loading) return;
-    setAchievementsLoading(true);
-    fetch(`/api/users/${userId}/achievements?locale=${locale}`, { method: "POST" })
-      .then((res) => res.json())
-      .then((data: { categories: { category: string; items: AchievementResult[] }[] }) => {
-        setAchievementCategories(data.categories ?? []);
-        setAchievementsLoading(false);
-      })
-      .catch(() => setAchievementsLoading(false));
-  }, [userId, loading, locale]);
+  const { data: achievementsData, isLoading: achievementsLoading } = useQuery<{
+    categories: { category: string; items: AchievementResult[] }[];
+  }>({
+    queryKey: ["user-achievements", userId, locale],
+    queryFn: () =>
+      fetch(`/api/users/${userId}/achievements?locale=${locale}`, { method: "POST" }).then((res) =>
+        res.json()
+      ),
+    enabled: !!userId && !loading,
+  });
 
-  return { profile, loading, achievementCategories, achievementsLoading };
+  return {
+    profile,
+    loading,
+    achievementCategories: achievementsData?.categories ?? [],
+    achievementsLoading,
+  };
 }
