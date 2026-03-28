@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useApp } from "@/lib/store";
+import { useApp } from "@/hooks/useApp";
 import { useTranslation } from "@/lib/i18n/context";
 import { ReplayTranscript } from "./components/ReplayTranscript";
 import { ReplayAnalysis } from "./components/ReplayAnalysis";

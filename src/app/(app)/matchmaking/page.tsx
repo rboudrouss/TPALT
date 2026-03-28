@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useApp, TrainingDifficulty } from "@/lib/store";
+import { useApp, TrainingDifficulty } from "@/hooks/useApp";
+import { useForceLogin } from "@/hooks/useForceLogin";
 import { useMatchmaking } from "./hooks/useMatchmaking";
 import { DifficultySelector } from "./components/DifficultySelector";
 import { MatchmakingSpinner } from "./components/MatchmakingSpinner";
@@ -10,14 +11,14 @@ import { MatchmakingSpinner } from "./components/MatchmakingSpinner";
 export default function MatchmakingPage() {
   const { state, dispatch } = useApp();
   const router = useRouter();
+  const user = useForceLogin();
   const [difficultySelected, setDifficultySelected] = useState(
     state.gameMode !== "training"
   );
 
   useEffect(() => {
-    if (!state.user) router.replace("/");
-    else if (!state.gameMode) router.replace("/dashboard");
-  }, [state.user, state.gameMode, router]);
+    if (user && !state.gameMode) router.replace("/dashboard");
+  }, [user, state.gameMode, router]);
 
   const handleStartTraining = (difficulty: TrainingDifficulty) => {
     dispatch({ type: "SET_TRAINING_DIFFICULTY", payload: difficulty });

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useApp } from "@/lib/store";
+import { useApp } from "@/hooks/useApp";
+import { useForceLogin } from "@/hooks/useForceLogin";
 import { useTranslation } from "@/lib/i18n/context";
 import { ScoreCard } from "./components/ScoreCard";
 import { SkillBreakdown } from "./components/SkillBreakdown";
@@ -14,20 +15,15 @@ export default function AnalysisPage() {
   const { state, dispatch } = useApp();
   const router = useRouter();
   const { t } = useTranslation();
+  const user = useForceLogin();
   const { analysisData } = state;
-  const [waitedForData, setWaitedForData] = useState(false);
 
   useEffect(() => {
-    if (!analysisData && !waitedForData) {
-      const timer = setTimeout(() => setWaitedForData(true), 2000);
+    if (user && !analysisData) {
+      const timer = setTimeout(() => router.replace("/dashboard"), 2000);
       return () => clearTimeout(timer);
     }
-  }, [analysisData, waitedForData]);
-
-  useEffect(() => {
-    if (!state.user) router.replace("/");
-    else if (!analysisData && waitedForData) router.replace("/dashboard");
-  }, [state.user, analysisData, waitedForData, router]);
+  }, [user, analysisData, router]);
 
   const handleHome = () => {
     dispatch({ type: "SET_ANALYSIS", payload: null });

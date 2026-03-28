@@ -1,7 +1,7 @@
 "use client";
 
 import { useReducer, ReactNode, useEffect } from "react";
-import { AppContext, appReducer, initialState, User } from "@/lib/store";
+import { AppContext, appReducer, initialState, User } from "@/hooks/useApp";
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState);

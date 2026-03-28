@@ -3,7 +3,7 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { User } from "@/lib/store";
+import type { User } from "@/hooks/useApp";
 import { useTranslation } from "@/lib/i18n/context";
 
 interface LoginFormProps {

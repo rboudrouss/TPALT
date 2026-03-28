@@ -1,8 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useApp } from "@/lib/store";
-import type { User } from "@/lib/store";
+import { useApp } from "@/hooks/useApp";
+import type { User } from "@/hooks/useApp";
 import { HeroSection } from "./components/HeroSection";
 import { LoginForm } from "./components/LoginForm";
 import { FeatureList } from "./components/FeatureList";

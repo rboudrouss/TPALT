@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useApp } from "@/lib/store";
+import { useApp } from "@/hooks/useApp";
 import { useTranslation } from "@/lib/i18n/context";
 
 export function useMatchmaking(difficultySelected: boolean): {

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { Zap, Sword, Brain } from "lucide-react";
-import { TrainingDifficulty } from "@/lib/store";
+import { TrainingDifficulty } from "@/hooks/useApp";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTranslation } from "@/lib/i18n/context";

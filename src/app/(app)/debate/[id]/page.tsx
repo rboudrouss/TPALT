@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useApp } from "@/lib/store";
+import { useApp } from "@/hooks/useApp";
+import { useForceLogin } from "@/hooks/useForceLogin";
 import { getRandomTopic } from "@/lib/topics";
 import { useAntiCheat } from "./hooks/useAntiCheat";
 import { useWebSocket } from "./hooks/useWebSocket";
@@ -19,13 +20,10 @@ export default function DebatePage() {
   const { state, dispatch } = useApp();
   const router = useRouter();
   const { t, locale } = useTranslation();
-  const { gameMode, trainingDifficulty, currentDebateId, playerRole, user } = state;
+  const { gameMode, trainingDifficulty, currentDebateId, playerRole } = state;
+  const user = useForceLogin();
   const { checkAchievements } = useToasts();
   const isMultiplayer = gameMode === "casual" || gameMode === "ranked";
-
-  useEffect(() => {
-    if (!user) router.replace("/");
-  }, [user, router]);
 
   // ── Core debate state ──────────────────────────────────────────────────────
   const [topic, setTopic] = useState(() => getRandomTopic(locale));
@@ -113,9 +111,14 @@ export default function DebatePage() {
 
   // ── Turn switch (training only) ────────────────────────────────────────────
   const handleTurnSwitch = () => {
+    const nextTurnCount = turnCount + 1;
     setTimeLeft(ROUND_TIME);
     setIsMyTurn((prev) => !prev);
-    setTurnCount((prev) => prev + 1);
+    setTurnCount(nextTurnCount);
+    if (!isMultiplayer && nextTurnCount >= 6) {
+      handleEndDebate();
+      return;
+    }
     if (isMyTurn && !isMultiplayer) {
       fetchOpponentResponse();
     }
@@ -226,15 +229,7 @@ export default function DebatePage() {
     router.push("/analysis");
   }, [currentDebateId, cheatCount, topic, user, opponentName, dispatch, router, checkAchievements]);
 
-  useEffect(() => {
-    handleEndDebateRef.current = handleEndDebate;
-  }, [handleEndDebate]);
-
-  useEffect(() => {
-    if (!isMultiplayer && turnCount >= 6) {
-      handleEndDebate();
-    }
-  }, [turnCount, handleEndDebate, isMultiplayer]);
+  handleEndDebateRef.current = handleEndDebate;
 
   // ── Render ─────────────────────────────────────────────────────────────────
   if (!user) return null;

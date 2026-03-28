@@ -7,7 +7,7 @@ import { ArrowLeft, Crown, Medal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useApp } from "@/lib/store";
+import { useApp } from "@/hooks/useApp";
 import { useTranslation } from "@/lib/i18n/context";
 
 interface LeaderboardUser {

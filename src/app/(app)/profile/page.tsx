@@ -1,7 +1,7 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useApp } from "@/lib/store";
+import { useForceLogin } from "@/hooks/useForceLogin";
 import { useTranslation } from "@/lib/i18n/context";
 import { useProfile, computeCurrentStreak, computeMaxStreak, computeAverageScore } from "./hooks/useProfile";
 import ProfileHeader from "./components/ProfileHeader";
@@ -13,19 +13,14 @@ import AchievementsTab from "./components/AchievementsTab";
 type Tab = "overview" | "history" | "achievements";
 
 export default function ProfilePage() {
-  const { state } = useApp();
   const router = useRouter();
   const { t } = useTranslation();
-  const { user } = state;
+  const user = useForceLogin();
   const [activeTab, setActiveTab] = useState<Tab>("overview");
 
   const { profile, loading, achievementCategories, achievementsLoading } = useProfile(
     user?.id
   );
-
-  useEffect(() => {
-    if (!user) router.replace("/");
-  }, [user, router]);
 
   if (!user) return null;
 
