@@ -39,28 +39,25 @@ export function useMatchmaking(difficultySelected: boolean): {
     if (!state.user || !state.gameMode) return;
 
     if (state.gameMode === "training") {
-      const timers = [
-        setTimeout(() => setStatus(t.matchmaking.statusAnalyzing), 1500),
-        setTimeout(() => setStatus(t.matchmaking.statusSelecting), 3000),
-        setTimeout(() => setStatus(t.matchmaking.statusPreparing), 4500),
-        setTimeout(async () => {
-          try {
-            const res = await fetch("/api/debates", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ playerId: state.user!.id, mode: "training", locale }),
-            });
-            if (!res.ok) throw new Error();
-            const debate = await res.json();
-            dispatch({ type: "SET_DEBATE_ID", payload: debate.id });
-            dispatch({ type: "SET_PLAYER_ROLE", payload: "player1" });
-            router.push(`/debate/${debate.id}`);
-          } catch {
-            console.error("Failed to create training debate");
-          }
-        }, 6000),
-      ];
-      return () => timers.forEach(clearTimeout);
+      let cancelled = false;
+      (async () => {
+        try {
+          const res = await fetch("/api/debates", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ playerId: state.user!.id, mode: "training", locale }),
+          });
+          if (!res.ok) throw new Error();
+          const debate = await res.json();
+          if (cancelled) return;
+          dispatch({ type: "SET_DEBATE_ID", payload: debate.id });
+          dispatch({ type: "SET_PLAYER_ROLE", payload: "player1" });
+          router.push(`/debate/${debate.id}`);
+        } catch {
+          console.error("Failed to create training debate");
+        }
+      })();
+      return () => { cancelled = true; };
     }
 
     setStatus(t.matchmaking.statusSearching);
