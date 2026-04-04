@@ -4,5 +4,3 @@ export interface Message {
   content: string;
   timestamp: Date;
 }
-
-export const ROUND_TIME = 90;

@@ -6,6 +6,14 @@ import { Duplex } from "stream";
 import { PrismaClient } from "./src/app/generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { getRandomTopic } from "./src/lib/topics";
+import {
+  MAX_MESSAGES,
+  MM_ELO_WINDOW_BASE,
+  MM_ELO_WINDOW_INCREMENT,
+  MM_ELO_WINDOW_EXPAND_SECS,
+  MM_ELO_WINDOW_MAX,
+  WS_HEARTBEAT_INTERVAL_MS,
+} from "./src/lib/const";
 
 const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
@@ -58,7 +66,7 @@ function findBestMatch(queue: QueueEntry[], userId: string, elo: number, mode: s
     const entry = queue[i];
     if (entry.userId === userId) continue;
     const waitSecs = (now - entry.queuedAt) / 1000;
-    const window = Math.min(150 + Math.floor(waitSecs / 10) * 50, 500);
+    const window = Math.min(MM_ELO_WINDOW_BASE + Math.floor(waitSecs / MM_ELO_WINDOW_EXPAND_SECS) * MM_ELO_WINDOW_INCREMENT, MM_ELO_WINDOW_MAX);
     const diff = Math.abs(elo - entry.elo);
     if (diff <= window && diff < bestDiff) { bestIdx = i; bestDiff = diff; }
   }
@@ -105,7 +113,7 @@ app.prepare().then(() => {
       ws.isAlive = false;
       ws.ping();
     });
-  }, 15_000);
+  }, WS_HEARTBEAT_INTERVAL_MS);
   wss.on("close", () => clearInterval(heartbeatInterval));
 
   server.on("upgrade", (req: IncomingMessage, socket: Duplex, head: Buffer) => {
@@ -212,7 +220,7 @@ app.prepare().then(() => {
 
           console.log(`[WS] broadcast → ${room.players.size} player(s), nextTurn=${nextTurn}`);
 
-          if (room.messageCount >= 6) broadcast(room, { type: "debate_ended" });
+          if (room.messageCount >= MAX_MESSAGES) broadcast(room, { type: "debate_ended" });
 
           db.message.create({ data: { debateId, senderId: userId, content } })
             .catch(err => console.error("[WS] save message failed:", err));

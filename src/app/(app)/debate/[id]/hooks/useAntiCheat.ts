@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { CHEAT_WARNING_DURATION_MS } from "@/lib/const";
 
 export function useAntiCheat(gameMode: string | null | undefined) {
   const [cheatCount, setCheatCount] = useState(0);
@@ -11,7 +12,7 @@ export function useAntiCheat(gameMode: string | null | undefined) {
       if (document.hidden && gameMode === "ranked") {
         setCheatCount((prev) => prev + 1);
         setShowCheatWarning(true);
-        setTimeout(() => setShowCheatWarning(false), 3000);
+        setTimeout(() => setShowCheatWarning(false), CHEAT_WARNING_DURATION_MS);
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);

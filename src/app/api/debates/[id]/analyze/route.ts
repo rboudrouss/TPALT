@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { analyzeDebate } from "@/lib/groq";
-import { CASUAL_ELO_WIN, CASUAL_ELO_LOSS } from "@/lib/elo";
+import { CASUAL_ELO_WIN, CASUAL_ELO_LOSS, CHEAT_THRESHOLD, CHEAT_PENALTY, XP_PER_LEVEL } from "@/lib/const";
 
 export async function POST(
   request: NextRequest,
@@ -46,8 +46,8 @@ export async function POST(
 
     // Apply anti-cheat penalty in ranked mode
     const player1Score =
-      debate.mode === "ranked" && cheatCount >= 3
-        ? Math.max(0, rawAnalysis.player1Score - 30)
+      debate.mode === "ranked" && cheatCount >= CHEAT_THRESHOLD
+        ? Math.max(0, rawAnalysis.player1Score - CHEAT_PENALTY)
         : rawAnalysis.player1Score;
     const player2Score = rawAnalysis.player2Score;
 
@@ -91,7 +91,7 @@ export async function POST(
         const isWinner = analysisResult.player1Score > analysisResult.player2Score;
         const p1 = await db.user.findUnique({ where: { id: debate.player1Id } });
         const newXp = (p1?.xp ?? 0) + analysisResult.player1Score;
-        const newLevel = Math.floor(newXp / 500) + 1;
+        const newLevel = Math.floor(newXp / XP_PER_LEVEL) + 1;
         await db.user.update({
           where: { id: debate.player1Id },
           data: {
@@ -108,7 +108,7 @@ export async function POST(
         const isWinner = analysisResult.player2Score > analysisResult.player1Score;
         const p2 = await db.user.findUnique({ where: { id: debate.player2Id! } });
         const newXp = (p2?.xp ?? 0) + analysisResult.player2Score;
-        const newLevel = Math.floor(newXp / 500) + 1;
+        const newLevel = Math.floor(newXp / XP_PER_LEVEL) + 1;
         await db.user.update({
           where: { id: debate.player2Id! },
           data: {

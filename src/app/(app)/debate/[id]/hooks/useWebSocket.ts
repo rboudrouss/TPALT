@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, Dispatch, SetStateAction } from "react";
-import { Message, ROUND_TIME } from "./types";
+import { Message } from "./types";
+import { ROUND_TIME } from "@/lib/const";
 
 interface WebSocketSetters {
   setTopic: (topic: string) => void;
@@ -70,7 +71,7 @@ export function useWebSocket({
             { id: "0", sender: "system", content: "Connexion au débat...", timestamp: new Date() },
             ...loaded,
           ]);
-          setters.setTurnCount(debate.messages.length);
+          setters.setTurnCount(Math.ceil(debate.messages.length / 2));
         }
       }
 
@@ -113,7 +114,7 @@ export function useWebSocket({
         const nowMyTurn = msg.currentTurn === playerRole;
         setters.setIsMyTurn(nowMyTurn);
         setters.setIsOpponentTyping(!nowMyTurn);
-        setters.setTurnCount(msg.messageCount);
+        setters.setTurnCount(Math.ceil(msg.messageCount / 2));
         setters.setTimeLeft(ROUND_TIME);
       }
 

@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Clock, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTranslation, fmt } from "@/lib/i18n/context";
+import { MAX_TURNS } from "@/lib/const";
 
 const DIFFICULTY_COLORS: Record<string, string> = {
   easy: "text-emerald-400",
@@ -75,7 +76,7 @@ export function DebateInfoSidebar({
 
         <div className="mb-4">
           <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">{t.debate.turn}</h3>
-          <div className="text-2xl font-bold text-slate-900 dark:text-white">{turnCount + 1}/6</div>
+          <div className="text-2xl font-bold text-slate-900 dark:text-white">{turnCount + 1}/{MAX_TURNS}</div>
         </div>
 
         {gameMode === "training" && trainingDifficulty && (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { ANALYSIS_REDIRECT_DELAY_MS } from "@/lib/const";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/hooks/useApp";
 import { useForceLogin } from "@/hooks/useForceLogin";
@@ -20,7 +21,7 @@ export default function AnalysisPage() {
 
   useEffect(() => {
     if (user && !analysisData) {
-      const timer = setTimeout(() => router.replace("/dashboard"), 2000);
+      const timer = setTimeout(() => router.replace("/dashboard"), ANALYSIS_REDIRECT_DELAY_MS);
       return () => clearTimeout(timer);
     }
   }, [user, analysisData, router]);

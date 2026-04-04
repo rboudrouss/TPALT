@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ArrowLeft, Trophy, Calendar } from "lucide-react";
 import { useTranslation, fmt } from "@/lib/i18n/context";
+import { XP_PER_LEVEL } from "@/lib/const";
 
 interface ProfileHeaderProps {
   username: string;
@@ -28,7 +29,7 @@ export default function ProfileHeader({
   const { t } = useTranslation();
   const winRate =
     wins + losses > 0 ? Math.round((wins / (wins + losses)) * 100) : 0;
-  const xpProgress = (xp % 1000) / 10;
+  const xpProgress = (xp % XP_PER_LEVEL) / (XP_PER_LEVEL / 100);
 
   return (
     <div className="relative bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 text-white">
@@ -74,7 +75,7 @@ export default function ProfileHeader({
         <div className="mt-6 max-w-md">
           <div className="flex justify-between text-sm mb-2">
             <span>{t.common.level} {level}</span>
-            <span>{xp % 1000} / 1000 XP</span>
+            <span>{xp % XP_PER_LEVEL} / {XP_PER_LEVEL} XP</span>
           </div>
           <Progress value={xpProgress} className="h-2" />
         </div>

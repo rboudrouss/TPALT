@@ -8,7 +8,8 @@ import { getRandomTopic } from "@/lib/topics";
 import { useAntiCheat } from "./hooks/useAntiCheat";
 import { useWebSocket } from "./hooks/useWebSocket";
 import { useAIAssistant } from "./hooks/useAIAssistant";
-import { Message, ROUND_TIME } from "./hooks/types";
+import { Message } from "./hooks/types";
+import { ROUND_TIME, MAX_TURNS } from "@/lib/const";
 import { useToasts } from "@/components/providers/ToastProvider";
 import { useTranslation } from "@/lib/i18n/context";
 import { DebateInfoSidebar } from "./components/DebateInfoSidebar";
@@ -115,7 +116,7 @@ export default function DebatePage() {
     setTimeLeft(ROUND_TIME);
     setIsMyTurn((prev) => !prev);
     setTurnCount(nextTurnCount);
-    if (!isMultiplayer && nextTurnCount >= 6) {
+    if (!isMultiplayer && nextTurnCount >= MAX_TURNS) {
       handleEndDebate();
       return;
     }

@@ -4,14 +4,13 @@
 // ---------------------------------------------------------------------------
 
 import type { Locale } from "./i18n/types";
+import { MAX_PLAYER_CHARS, MAX_AI_WORDS } from "./const";
+
+export { MAX_PLAYER_CHARS, MAX_AI_WORDS };
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export type Difficulty = "easy" | "medium" | "hard";
-
-// ── Global debate limits (edit here to change everywhere) ─────────────────────
-export const MAX_PLAYER_CHARS = 500;
-export const MAX_AI_WORDS = 120;
 
 // ── Live evaluation (evaluate route) ─────────────────────────────────────────
 

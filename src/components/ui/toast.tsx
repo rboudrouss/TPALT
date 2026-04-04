@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { TOAST_DURATION_MS } from "@/lib/const";
 import { motion, AnimatePresence } from "motion/react";
 import { X } from "lucide-react";
 
@@ -18,7 +19,7 @@ interface ToastProps {
 
 function Toast({ toast, onClose }: ToastProps) {
   useEffect(() => {
-    const timer = setTimeout(onClose, 5000);
+    const timer = setTimeout(onClose, TOAST_DURATION_MS);
     return () => clearTimeout(timer);
   }, [onClose]);
 
